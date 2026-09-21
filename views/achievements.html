@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Achievements — ggstar AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="/public/vendor/alpine.min.js"></script>
+<style>
+  body{background:#0F172A;color-scheme:dark}.card{background:#1E293B}
+  .tier-common{background:rgba(148,163,184,.15);border:1px solid rgba(148,163,184,.45)}
+  .tier-rare{background:rgba(221,160,221,.15);border:1px solid rgba(221,160,221,.5)}
+  .tier-epic{background:rgba(250,204,21,.15);border:1px solid rgba(250,204,21,.5)}
+  .tier-legendary{background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.5)}
+  .locked{filter:grayscale(1);opacity:.3}
+  [x-cloak]{display:none!important}
+</style>
+</head>
+<body class="min-h-screen text-slate-100">
+<header class="border-b border-slate-800 bg-slate-900/85 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    <a href="/" class="text-xl font-bold text-pink-200">ggstar AI 🌸</a>
+    <nav class="flex items-center gap-1 text-sm">
+      <a href="/" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Analyze</a>
+      <a href="/leaderboard" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Leaderboard</a>
+      <a href="/achievements" class="rounded-lg bg-slate-800 px-3 py-1.5 text-pink-200">Achievements</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-5 py-10" x-data="achievements()" x-init="init()" x-cloak>
+  <h1 class="text-3xl font-bold">Achievements</h1>
+  <p class="mt-2 text-sm text-slate-400">
+    Signed in as <strong class="text-slate-200" x-text="'@' + viewerLogin"></strong>.
+    You can also inspect anyone else's unlocked achievements.
+  </p>
+
+  <div class="card mt-6 rounded-2xl p-5">
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <div class="relative flex-1">
+        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">@</span>
+        <input x-model="username" @keydown.enter="load()" placeholder="torvalds"
+               class="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-3 pl-8 pr-3 outline-none focus:border-pink-300/60" />
+      </div>
+      <button @click="load()" :disabled="loading"
+              class="rounded-xl bg-gradient-to-r from-pink-300 to-purple-300 px-6 py-3 font-semibold text-slate-900 disabled:opacity-40">
+        <span x-show="!loading">Load achievements</span>
+        <span x-show="loading">Loading…</span>
+      </button>
+    </div>
+    <p class="mt-3 text-sm text-rose-300" x-show="error" x-text="error"></p>
+    <p class="mt-3 text-sm text-slate-400" x-show="!error && loaded && !unlockedCount">
+      Nothing unlocked yet for this profile — it may not have been analyzed. Try
+      <a class="text-pink-200 hover:underline" :href="'/api/analyze'">running an analysis</a> first.
+    </p>
+    <p class="mt-3 text-sm text-emerald-300" x-show="!error && loaded && unlockedCount"
+       x-text="unlockedCount + ' of ' + achievements.length + ' unlocked'"></p>
+  </div>
+
+  <div class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <template x-for="a in achievements" :key="a.key">
+      <div class="rounded-2xl p-4" :class="a.unlocked ? ('tier-' + a.tier) : 'card locked'"
+           :title="a.hint">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-2xl" x-text="a.icon"></p>
+            <p class="mt-1 font-semibold" x-text="a.name"></p>
+            <p class="text-[11px] uppercase tracking-wide opacity-70" x-text="a.category"></p>
+          </div>
+          <span class="rounded-full px-2 py-0.5 text-[10px] uppercase"
+                :class="a.unlocked ? 'bg-black/25' : 'bg-slate-800 text-slate-400'"
+                x-text="a.unlocked ? a.tier : 'locked'"></span>
+        </div>
+        <p class="mt-3 text-xs opacity-80" x-text="a.hint"></p>
+      </div>
+    </template>
+  </div>
+</main>
+
+<footer class="mx-auto max-w-6xl px-5 pb-10">
+  <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 text-center">
+    <p class="text-sm font-semibold text-slate-200">Built on BOT Chain</p>
+    <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs">
+      <a href="https://botchain.ai" target="_blank" rel="noopener"
+         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">botchain.ai ↗</a>
+      <a href="https://scan.botchain.ai" target="_blank" rel="noopener"
+         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>
+      <a href="{{.ExplorerURL}}" target="_blank" rel="noopener"
+         class="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700">Testnet Explorer ↗</a>
+    </div>
+    <p class="mt-4 border-t border-slate-800 pt-4 text-[11px] text-slate-600">
+      {{.NetworkName}} · chain {{.ChainID}} · push-based achievements use the last 90 days of events
+    </p>
+  </div>
+</footer>
+
+<script>
+function achievements() {
+  return {
+    username: "{{.Username}}" || '',
+    viewerLogin: "{{.ViewerLogin}}" || '',
+    achievements: [],
+    unlockedCount: 0,
+    loading: false,
+    loaded: false,
+    error: '',
+
+    init() {
+      if (this.username) this.load();
+    },
+
+    async load() {
+      const name = (this.username || '').trim();
+      if (!name) return;
+
+      this.loading = true;
+      this.error = '';
+      this.loaded = false;
+
+      try {
+        const res = await fetch('/api/achievements/' + encodeURIComponent(name), { credentials: 'same-origin' });
+        if (res.status === 401) {
+          window.location.href = '/auth/github';
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load achievements');
+
+        this.achievements = data.achievements || [];
+        this.unlockedCount = this.achievements.filter(a => a.unlocked).length;
+        this.loaded = true;
+      } catch (e) {
+        this.error = e.message || 'Could not load achievements';
+      } finally {
+        this.loading = false;
+      }
+    }
+  };
+}
+</script>
+</body>
+</html>

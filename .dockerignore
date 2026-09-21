@@ -1,0 +1,39 @@
+.git
+.gitignore
+.env
+*.env
+!/.env.example
+
+# local database & runtime data
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+/data/
+docker-data/
+
+# docs & planning (tidak dibutuhkan di image)
+*.md
+plan.md
+task.md
+
+# tooling lokal (generator avatar ikut build context, dijalankan di stage builder)
+node_modules/
+package.json
+package-lock.json
+
+# generated avatars: selalu dibuat ulang di stage builder, jangan pakai yang lokal
+public/avatars/
+
+# artifacts & editor
+/output/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# go build cache lokal
+/ggstar
+/ggstar.exe
+vendor/

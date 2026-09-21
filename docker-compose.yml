@@ -1,0 +1,61 @@
+services:
+  ggstar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ggstar:latest
+    container_name: ggstar
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ggstar-data:/data
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  # Redis 8 is used as a cache only. Sessions live in SQLite on purpose: an LRU
+  # eviction policy could silently drop sessions and log users out at random.
+  redis:
+    image: redis:8-alpine
+    container_name: ggstar-redis
+    # Port 6379 is intentionally NOT published: it is reachable only from the
+    # compose network, so it can never be exposed to the internet.
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-ggstar-dev-only}
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --appendonly
+      - "yes"
+      - --save
+      - "60 1"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-ggstar-dev-only}", "ping"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+volumes:
+  ggstar-data:
+  redis-data:
