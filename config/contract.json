@@ -7,9 +7,9 @@
   "faucetUrl": "https://faucet.botchain.ai",
   "solidity": "0.8.26+commit.8a97fa7a.Emscripten.clang",
   "openzeppelin": "5.0.2",
-  "deployed": false,
-  "contractAddress": "",
-  "deployTxHash": "",
+  "deployed": true,
+  "contractAddress": "0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd",
+  "deployTxHash": "0xa719a0c834131a28f230508ca41a3993291f4068b5a3ebc817b9a5fe06002cab",
   "abi": [
     {
       "inputs": [],

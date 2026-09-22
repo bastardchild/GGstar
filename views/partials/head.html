@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{.Title}}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+{{if .WithEthers}}<script src="/public/vendor/ethers.min.js"></script>
+{{end}}{{if .WithAlpine}}<script defer src="/public/vendor/alpine.min.js"></script>
+{{end}}<link rel="stylesheet" href="/public/app.css" />
+</head>

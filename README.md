@@ -1,10 +1,10 @@
-# ggstar AI 🌸
+# GGstar
 
-**Verified GitHub reputation as a soulbound badge on BOT Chain.**
+**GitHub reputation as a soulbound badge on BOT Chain.**
 
-ggstar analyzes a public GitHub profile with AI, lets the developer curate the result,
+GGstar analyzes your GitHub profile with AI, lets you curate the result,
 then mints it as a **non-transferable ERC-721 (Soulbound Token)** on **BOT Chain Testnet (968)**.
-Anyone can verify the result on-chain, and holders can embed a live badge in their README.
+Anyone can verify the result on-chain, and holders can embed a badge in their README.
 
 Built for **Build Week Hackathon Vol.2 — Track AI & RWA**.
 
@@ -14,9 +14,10 @@ Built for **Build Week Hackathon Vol.2 — Track AI & RWA**.
 
 1. **Sign in with GitHub** — OAuth (`read:user` only). The login comes from GitHub's
    `/user` endpoint, never from the browser.
-2. **Analyze** — fetches a GitHub profile, repos, languages, organisations and commit events,
-   then computes a skill score, top skills, suggested titles and a summary.
-   You can analyze **anyone**, signed in or not.
+2. **Analyze** — one click fetches **your own** GitHub profile, repos, languages,
+   organisations and commit events, then computes a skill score, top skills,
+   suggested titles and a summary. The username always comes from your GitHub
+   login session; there is no username input to change.
 3. **Curate** — pick 1 of 100 unique avatars, choose a title (AI suggestion or custom),
    and **remove AI skills that do not fit**. Only the final list goes on-chain.
 4. **Mint** — MetaMask signs `mintBadge(...)`. Metadata is generated **server-side** into a
@@ -139,7 +140,7 @@ Sign-in is required to claim a profile, so an OAuth App is needed for local runs
 5. Restart: `docker compose up -d --force-recreate ggstar`, then confirm `/healthz`
    reports `"oauthEnabled": true`.
 
-Only the `read:user` scope is requested; ggstar never asks for write access.
+Only the `read:user` scope is requested; GGstar never asks for write access.
 
 All other commands are equally containerized:
 
@@ -160,8 +161,9 @@ docker run --rm -v "$PWD:/w" -w /w node:22-alpine \
 
 | | |
 |---|---|
-| Contract address | `TBD — fill in after deploying` |
-| Explorer | `https://scan.bohr.life/address/<address>` |
+| Contract address | `0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd` |
+| Deploy tx | `0xa719a0c834131a28f230508ca41a3993291f4068b5a3ebc817b9a5fe06002cab` |
+| Explorer | `https://scan.bohr.life/address/0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd` |
 | RPC | `https://rpc.bohr.life` |
 
 **BOT Chain Mainnet (Chain ID 677)**
@@ -268,7 +270,7 @@ README embed breaks):
 | Method | Route | Purpose |
 |---|---|---|
 | `GET` | `/`, `/leaderboard`, `/achievements` | pages (redirect to GitHub when anonymous) |
-| `POST` | `/api/analyze` | `{username, refresh?, achievements?}` → analysis, stats, achievements |
+| `POST` | `/api/analyze` | `{refresh?, achievements?}` → analysis, stats, achievements for **your own** login (`username` in body is ignored) |
 | `POST` | `/api/token-uri` | server-generated metadata; **403** unless `username` == your login |
 | `POST` | `/api/claim` | `{txHash}` → verifies the mint against your identity on-chain |
 | `POST` | `/auth/logout` | destroy the session |
@@ -278,7 +280,9 @@ README embed breaks):
 
 ### Authentication model
 
-Anyone may analyze any public GitHub profile. What OAuth gates is the **identity claim**:
+Analysis is **self-only**: `POST /api/analyze` always analyzes the signed-in GitHub
+login — any username sent in the request body is ignored server-side, and the UI has
+no username input to change. What OAuth gates is the **identity claim**:
 
 - The signed-in login comes from GitHub's `/user` endpoint and is stored server-side in
   SQLite. Nothing the browser says about its own identity is trusted.
@@ -394,7 +398,7 @@ Covered:
 
 | Package | What is asserted |
 |---|---|
-| `main` (integration) | public routes stay public, badge SVG stays public, anonymous gets 401/302, **minting another username is 403**, own profile is allowed, case-insensitive login match, CSRF blocks unsigned POSTs, `/api/me` exposes identity + token |
+| `main` (integration) | public routes stay public, badge SVG stays public, anonymous gets 401/302, **analyze is self-only (body username ignored)**, minting another username is 403, own profile is allowed, case-insensitive login match, CSRF blocks unsigned POSTs, `/api/me` exposes identity + token |
 | `auth` | authorize URL contains state/scope/redirect and leaks no secret, only `read:user` is requested, state is random/single-use/rejects mismatches, sign-in/out lifecycle, `RequireAuth` behaviour |
 | `chain` | struct ABI decode (both layouts), receipt fetch (pending vs mined), `BadgeMinted` log decode, foreign-contract and wrong-topic rejection, keccak selectors vs known values |
 | `sessionstore` | round-trip, missing key returns `nil` (not an error), expiry, update-in-place, delete/reset, zero-expiration semantics, shared-pool close |

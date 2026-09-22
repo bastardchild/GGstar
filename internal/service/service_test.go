@@ -51,7 +51,7 @@ func TestBuildTokenURIIsValidBase64JSON(t *testing.T) {
 		t.Fatalf("metadata is not valid JSON: %v", err)
 	}
 
-	if payload["name"] != "ggstar Skill Badge - torvalds" {
+	if payload["name"] != "GGstar Skill Badge - torvalds" {
 		t.Errorf("unexpected name: %v", payload["name"])
 	}
 	if payload["title"] != "Kernel Whisperer" {

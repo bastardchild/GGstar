@@ -1,100 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ggstar AI — Verified GitHub Skill Badge on BOT Chain</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="/public/vendor/ethers.min.js"></script>
-<script defer src="/public/vendor/alpine.min.js"></script>
-<style>
-  :root { color-scheme: dark; }
-  body { background:#0F172A; }
-  .card { background:#1E293B; }
-  .glow { box-shadow:0 0 0 1px rgba(255,182,193,.25), 0 12px 40px -12px rgba(255,182,193,.35); }
-  .chip { background:rgba(152,255,152,.12); border:1px solid rgba(152,255,152,.35); }
-  .tier-common{background:rgba(148,163,184,.18);border:1px solid rgba(148,163,184,.5)}
-  .tier-rare{background:rgba(221,160,221,.18);border:1px solid rgba(221,160,221,.55)}
-  .tier-epic{background:rgba(250,204,21,.18);border:1px solid rgba(250,204,21,.55)}
-  .tier-legendary{background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.55)}
-  .locked{filter:grayscale(1);opacity:.35}
-  ::-webkit-scrollbar{width:10px;height:10px}
-  ::-webkit-scrollbar-thumb{background:#334155;border-radius:9px}
-  [x-cloak]{display:none!important}
-</style>
-</head>
+{{template "partials/head" .}}
 <body class="min-h-screen text-slate-100 antialiased">
 
-<div x-data="ggstar()" x-init="init()" x-cloak class="pb-24">
+<div x-data="ggstar()" x-init="init()" x-cloak class="flex min-h-screen flex-col">
+  {{template "partials/nav" .}}
 
-  <!-- ============ NAVBAR ============ -->
-  <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/85 backdrop-blur">
-    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
-      <div class="flex items-center gap-3">
-        <span class="text-xl font-bold text-pink-200">ggstar AI 🌸</span>
-        <span class="hidden rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-slate-400 sm:inline">
-          {{.NetworkName}} · {{.ChainID}}
-        </span>
-      </div>
-      <nav class="flex items-center gap-1 text-sm">
-        <a href="/" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Analyze</a>
-        <a href="/leaderboard" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Leaderboard</a>
-        <a href="/achievements" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Achievements</a>
-
-        <!-- GitHub identity: required to claim a profile -->
-        <template x-if="!signedIn">
-          <a :href="signInUrl"
-             class="ml-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 font-medium text-slate-200 hover:bg-slate-700">
-            Sign in with GitHub
-          </a>
-        </template>
-        <template x-if="signedIn">
-          <div class="ml-2 flex items-center gap-2">
-            <img :src="viewerAvatar" x-show="viewerAvatar" alt="" class="h-6 w-6 rounded-full border border-slate-600" />
-            <span class="rounded-lg bg-emerald-400/10 px-2.5 py-1 text-emerald-300" x-text="'@' + viewerLogin"></span>
-            <button @click="signOut()"
-                    class="rounded-lg border border-slate-600 px-2.5 py-1 text-slate-300 hover:bg-slate-800">
-              Sign out
-            </button>
-          </div>
-        </template>
-
-        <button @click="connectWallet()" :disabled="connecting"
-                class="ml-2 rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
-          <span x-show="!walletAddress" x-text="connecting ? 'Connecting…' : 'Connect MetaMask'"></span>
-          <span x-show="walletAddress" x-text="shortAddr"></span>
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <main class="mx-auto max-w-6xl px-5">
+  <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-5">
 
     <!-- ============ HERO + STEP 1 ============ -->
-    <section class="pt-10">
+    <section class="py-10">
       <h1 class="text-3xl font-bold sm:text-4xl">
-        Turn your GitHub into a
+        Turn GitHub into
         <span class="bg-gradient-to-r from-pink-300 via-purple-300 to-emerald-300 bg-clip-text text-transparent">
-          soulbound reputation badge
+          on-chain proof.
         </span>
       </h1>
       <p class="mt-3 max-w-2xl text-slate-400">
-        AI analyzes your public GitHub activity, you customize the badge, then mint it as a
-        non-transferable ERC-721 on BOT Chain. Verify it forever on the explorer.
+        Pick your title, set your skills, and mint a non-transferable badge on BOT Chain.
+        Verifiable directly in your wallet.
       </p>
-
-      <div class="mt-6 flex flex-wrap items-center gap-2 text-[11px]">
-        <span class="rounded-full bg-slate-800 px-3 py-1 text-slate-300">Chain {{.ChainID}} ({{.ChainIDHex}})</span>
-        <a class="rounded-full bg-slate-800 px-3 py-1 text-slate-300 hover:text-pink-200" href="{{.ExplorerURL}}" target="_blank" rel="noopener">Explorer ↗</a>
-        <a class="rounded-full bg-slate-800 px-3 py-1 text-slate-300 hover:text-pink-200" href="{{.FaucetURL}}" target="_blank" rel="noopener">Faucet ↗</a>
-        <span class="rounded-full px-3 py-1"
-              :class="aiEnabled ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'">
-          AI: <span x-text="aiEnabled ? 'live' : 'mock fallback'"></span>
-        </span>
-        <span class="rounded-full px-3 py-1"
-              :class="contractReady ? 'bg-emerald-400/10 text-emerald-300' : 'bg-rose-400/10 text-rose-300'"
-              x-text="contractReady ? 'Contract ready' : 'Contract not deployed'"></span>
-      </div>
 
       <!-- Explain the one gate up front, so visitors are never surprised. -->
       <div x-show="!signedIn" class="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
@@ -103,37 +26,31 @@
             <p class="text-sm font-semibold text-slate-200">Sign in to analyze and mint</p>
             <p class="mt-1 text-xs text-slate-400">
               Analysis and minting require a GitHub account, because a badge is a claim about
-              <em>your</em> identity. The
-              <a href="/leaderboard" class="text-pink-200 hover:underline">leaderboard</a> and
-              <a href="/achievements" class="text-pink-200 hover:underline">achievements</a>
-              are open to everyone.
+              <em>your</em> identity.
             </p>
           </div>
           <a :href="signInUrl"
-             class="shrink-0 rounded-xl bg-gradient-to-r from-pink-300 to-purple-300 px-5 py-2.5 font-semibold text-slate-900 hover:opacity-90">
-            Sign in with GitHub
+             class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-300 to-purple-300 px-5 py-2.5 font-semibold text-slate-900 hover:opacity-90">
+            {{template "icon-github" .}}<span>Sign in with GitHub</span>
           </a>
         </div>
       </div>
 
       <div class="card glow mt-7 rounded-2xl p-5">
-        <label class="text-sm font-medium text-slate-300">GitHub username</label>
-        <div class="mt-2 flex flex-col gap-3 sm:flex-row">
-          <div class="relative flex-1">
-            <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">@</span>
-            <input x-model="username" @keydown.enter="analyze()" :disabled="loading"
-                   placeholder="torvalds"
-                   class="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-3 pl-8 pr-3 outline-none focus:border-pink-300/60" />
+        <p class="text-sm font-medium text-slate-300">Your GitHub profile</p>
+        <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="flex-1 rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-slate-200">
+            <span class="text-slate-500">@</span><span x-text="viewerLogin || 'â€”'"></span>
           </div>
-          <button @click="analyze()" :disabled="loading || !username.trim() || !signedIn"
+          <button @click="analyze()" :disabled="loading || !signedIn"
                   class="rounded-xl bg-gradient-to-r from-pink-300 to-purple-300 px-6 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
             <span x-show="!signedIn">Sign in to analyze</span>
-            <span x-show="signedIn && !loading">Analyze Skill ✨</span>
-            <span x-show="signedIn && loading">Analyzing…</span>
+            <span x-show="signedIn && !loading">Analyze my skill</span>
+            <span x-show="signedIn && loading">Analyzingâ€¦</span>
           </button>
         </div>
-        <p class="mt-2 text-xs text-slate-500" x-show="!githubAuth">
-          Tip: set <code class="text-slate-400">GITHUB_TOKEN</code> to raise the GitHub rate limit (60 → 5000 req/h).
+        <p class="mt-2 text-xs text-slate-500" x-show="signedIn">
+          One click analyzes the GitHub account you signed in with. To analyze another profile, sign out and sign in with that account.
         </p>
         <p class="mt-3 rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300" x-show="error" x-text="error"></p>
       </div>
@@ -141,7 +58,7 @@
       <div x-show="loading" class="card mt-5 rounded-2xl p-5">
         <div class="flex items-center gap-3 text-slate-300">
           <span class="h-3 w-3 animate-ping rounded-full bg-pink-300"></span>
-          <span>Reading GitHub profile, repos, organisations and commit events…</span>
+          <span>Reading GitHub profile, repos, organisations and commit eventsâ€¦</span>
         </div>
         <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
           <div class="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-pink-300 to-emerald-300"></div>
@@ -163,7 +80,7 @@
               <p class="truncate text-lg font-bold" x-text="finalTitle || 'Untitled'"></p>
               <p class="truncate text-xs text-slate-400" x-text="'@' + (result?.analysis?.username || username)"></p>
               <span class="mt-1 inline-block rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] text-emerald-300">
-                Verified on BOT Chain 💖
+                Verified on BOT Chain
               </span>
             </div>
           </div>
@@ -195,14 +112,14 @@
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Stars</dt><dd class="font-semibold" x-text="result?.stats?.totalStars ?? 0"></dd></div>
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Repos</dt><dd class="font-semibold" x-text="result?.stats?.ownRepos ?? 0"></dd></div>
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Followers</dt><dd class="font-semibold" x-text="result?.stats?.followers ?? 0"></dd></div>
-            <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Lang</dt><dd class="truncate font-semibold" x-text="result?.stats?.dominantLanguage || '—'"></dd></div>
+            <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Lang</dt><dd class="truncate font-semibold" x-text="result?.stats?.dominantLanguage || 'â€”'"></dd></div>
           </dl>
         </div>
 
         <button @click="mintSBT()" :disabled="isMinting || !contractReady || !selectedSkills.length || !canMint"
                 class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-300 to-teal-300 px-5 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
-          <span x-show="!isMinting">Mint Soulbound Badge on BOT Chain 💖</span>
-          <span x-show="isMinting">Waiting for wallet…</span>
+          <span x-show="!isMinting">Mint badge on BOT Chain</span>
+          <span x-show="isMinting">Waiting for walletâ€¦</span>
         </button>
         <p class="mt-2 text-center text-[11px] text-rose-300" x-show="!contractReady">
           CONTRACT_ADDRESS is not set. Deploy the contract (Fase 1) and restart the app.
@@ -226,7 +143,7 @@
           </template>
         </div>
         <p class="mt-2 text-center text-[11px] text-emerald-300" x-show="result && canMint">
-          Minting as <span x-text="'@' + viewerLogin"></span> — ownership will be verified on-chain after minting.
+          Minting as <span x-text="'@' + viewerLogin"></span> â€” ownership will be verified on-chain after minting.
         </p>
       </div>
 
@@ -235,7 +152,7 @@
         <div class="card rounded-2xl p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Pick an avatar</h2>
-            <span class="text-[11px] text-slate-500">100 avatars · 128×128</span>
+            <span class="text-[11px] text-slate-500">100 avatars Â· 128Ã-128</span>
           </div>
           <div class="mt-3 grid max-h-64 grid-cols-10 gap-1.5 overflow-y-auto pr-1">
             <template x-for="n in 100" :key="n">
@@ -263,28 +180,28 @@
             <span>Custom title</span>
           </label>
           <input x-show="selectedTitle === '__custom__'" x-model="customTitle" maxlength="60"
-                 placeholder="Solidity Princess 👑"
+                 placeholder="e.g. Go backend developer"
                  class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm outline-none focus:border-pink-300/60" />
-          <p class="mt-2 text-[11px] text-slate-500">Final title: <span class="text-pink-200" x-text="finalTitle || '—'"></span></p>
+          <p class="mt-2 text-[11px] text-slate-500">Final title: <span class="text-pink-200" x-text="finalTitle || 'â€”'"></span></p>
         </div>
 
         <div class="card rounded-2xl p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Curate your skills</h2>
-            <span class="text-[11px] text-slate-500">AI suggestions — remove what does not fit</span>
+            <span class="text-[11px] text-slate-500">Suggestions â€” remove what does not fit</span>
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
             <template x-for="(s, i) in selectedSkills" :key="s + 'sel' + i">
               <span class="chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm text-emerald-200">
                 <span x-text="s"></span>
-                <button @click="removeSkill(i)" class="text-emerald-300/70 hover:text-rose-300" :aria-label="'remove ' + s">×</button>
+                <button @click="removeSkill(i)" class="text-emerald-300/70 hover:text-rose-300" :aria-label="'remove ' + s">Ã-</button>
               </span>
             </template>
             <span x-show="!selectedSkills.length" class="text-xs text-slate-500">No skills selected.</span>
           </div>
 
           <div class="mt-4 border-t border-slate-800 pt-3" x-show="removedSkills.length">
-            <p class="text-[11px] text-slate-500">Removed — click to restore</p>
+            <p class="text-[11px] text-slate-500">Removed â€” click to restore</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <template x-for="(s, i) in removedSkills" :key="s + 'rm' + i">
                 <button @click="restoreSkill(i)"
@@ -299,7 +216,7 @@
         <div class="card rounded-2xl p-5">
           <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Achievements unlocked</h2>
           <p class="mt-1 text-[11px] text-slate-500">
-            <span x-text="result?.stats?.unlockedCount ?? 0"></span> unlocked ·
+            <span x-text="result?.stats?.unlockedCount ?? 0"></span> unlocked Â·
             <a class="text-pink-200 hover:underline" :href="'/achievements?username=' + (result?.analysis?.username || '')">view all</a>
           </p>
           <div class="mt-3 flex flex-wrap gap-2">
@@ -321,9 +238,9 @@
               <li class="flex items-center justify-between gap-3 py-2">
                 <div class="min-w-0">
                   <p class="truncate font-medium" x-text="r.name"></p>
-                  <p class="truncate text-[11px] text-slate-500" x-text="r.description || '—'"></p>
+                  <p class="truncate text-[11px] text-slate-500" x-text="r.description || 'â€”'"></p>
                 </div>
-                <span class="shrink-0 text-xs text-amber-300">★ <span x-text="r.stars"></span></span>
+                <span class="shrink-0 text-xs text-amber-300">â˜… <span x-text="r.stars"></span></span>
               </li>
             </template>
           </ul>
@@ -337,15 +254,15 @@
     <div class="card glow max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h3 class="text-xl font-bold text-emerald-300">Badge minted 🎉</h3>
-          <p class="mt-1 text-sm text-slate-400">Your soulbound reputation badge now lives on BOT Chain.</p>
+          <h3 class="text-xl font-bold text-emerald-300">Badge minted</h3>
+          <p class="mt-1 text-sm text-slate-400">Your badge is now on BOT Chain.</p>
         </div>
-        <button @click="showModal = false" class="text-slate-500 hover:text-slate-200">×</button>
+        <button @click="showModal = false" class="text-slate-500 hover:text-slate-200">Ã-</button>
       </div>
 
       <div class="mt-4 rounded-xl bg-slate-900/70 p-3 text-xs">
         <p class="text-slate-500">Transaction</p>
-        <a class="break-all text-pink-200 hover:underline" :href="txUrl" target="_blank" rel="noopener" x-text="txHash || '—'"></a>
+        <a class="break-all text-pink-200 hover:underline" :href="txUrl" target="_blank" rel="noopener" x-text="txHash || 'â€”'"></a>
       </div>
 
       <!-- Ownership verification result -->
@@ -361,21 +278,21 @@
           <p>
             <strong>Unverified claim.</strong>
             <span x-text="claim.reason || 'ownership could not be proven'"></span>
-            The badge is on-chain but its README widget will show “Unverified claim”.
+            The badge is on-chain but its README widget will show â€œUnverified claimâ€.
           </p>
         </template>
         <template x-if="!claim">
-          <p>Checking ownership on-chain…</p>
+          <p>Checking ownership on-chainâ€¦</p>
         </template>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
         <a :href="txUrl" target="_blank" rel="noopener"
-           class="rounded-lg bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700">View on BOTScan ↗</a>
+           class="rounded-lg bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700">View on BOTScan â†-</a>
         <a :href="tweetUrl" target="_blank" rel="noopener"
-           class="rounded-lg bg-sky-400/20 px-3 py-2 text-sm text-sky-200 hover:bg-sky-400/30">Share to X (@BOTChain_ai) ↗</a>
+           class="rounded-lg bg-sky-400/20 px-3 py-2 text-sm text-sky-200 hover:bg-sky-400/30">Share to X (@BOTChain_ai) â†-</a>
         <a :href="badgeApiUrl" target="_blank" rel="noopener"
-           class="rounded-lg bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700">Open badge SVG ↗</a>
+           class="rounded-lg bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700">Open badge SVG â†-</a>
       </div>
 
       <div class="mt-5 space-y-3">
@@ -394,33 +311,11 @@
     </div>
   </div>
 
-  <!-- ============ BOT Chain branding (submission requirement) ============ -->
-  <footer class="mx-auto mt-16 max-w-6xl px-5 pb-10">
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-      <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-        <div class="text-center sm:text-left">
-          <p class="text-sm font-semibold text-slate-200">Built on BOT Chain</p>
-          <p class="mt-1 text-[11px] text-slate-500">
-            AI-Native Layer 1 for AI Agents, DePIN and Real-World Assets.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
-          <a href="https://botchain.ai" target="_blank" rel="noopener"
-             class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">botchain.ai ↗</a>
-          <a href="https://scan.botchain.ai" target="_blank" rel="noopener"
-             class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>
-          <a href="{{.ExplorerURL}}" target="_blank" rel="noopener"
-             class="rounded-lg bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700">Testnet Explorer ↗</a>
-        </div>
-      </div>
-      <p class="mt-4 border-t border-slate-800 pt-4 text-center text-[11px] text-slate-600">
-        ggstar AI · {{.NetworkName}} ({{.ChainID}}) · analyses cached 10 min · {{.ProfileCount}} profiles indexed
-      </p>
-    </div>
-  </footer>
+  {{template "partials/footer" .}}
+
 </div>
 
-<!-- ============ ALPINE APP ============ -->
+<!-- GGSTAR bootstrap (server values); app logic lives in /public/app.js -->
 <script>
 const GGSTAR = {
   chainIdHex: "{{.ChainIDHex}}",
@@ -435,366 +330,7 @@ const GGSTAR = {
   githubAuth: {{.GitHubAuth}},
   loaded: false
 };
-
-async function loadGGStarConfig() {
-  try {
-    const res = await fetch('/api/config');
-    if (!res.ok) return;
-    const cfg = await res.json();
-    Object.assign(GGSTAR, {
-      chainIdHex: cfg.chainIdHex || GGSTAR.chainIdHex,
-      chainId: cfg.chainId || GGSTAR.chainId,
-      chainName: cfg.network || GGSTAR.chainName,
-      rpcUrl: cfg.rpcUrl || GGSTAR.rpcUrl,
-      explorerUrl: cfg.explorerUrl || GGSTAR.explorerUrl,
-      nativeSymbol: cfg.nativeSymbol || GGSTAR.nativeSymbol,
-      contractAddress: cfg.contractAddress || '',
-      abi: Array.isArray(cfg.abi) ? cfg.abi : [],
-      aiEnabled: !!cfg.aiEnabled,
-      githubAuth: !!cfg.githubAuth,
-      loaded: true
-    });
-  } catch (_) { /* template values remain as fallback */ }
-}
-
-function ggstar() {
-  return {
-    // config
-    aiEnabled: GGSTAR.aiEnabled,
-    githubAuth: GGSTAR.githubAuth,
-    contractReady: /^0x[0-9a-fA-F]{40}$/.test(GGSTAR.contractAddress || ''),
-
-    // GitHub identity
-    signedIn: false,
-    viewerLogin: '',
-    viewerAvatar: '',
-    csrfToken: '',
-    signInUrl: '/auth/github',
-    signOutUrl: '/auth/logout',
-
-    // step 1
-    username: '',
-    loading: false,
-    error: '',
-
-    // wallet
-    walletAddress: '',
-    connecting: false,
-    chainId: '',
-
-    // step 2
-    result: null,
-    selectedAvatar: 1,
-    selectedTitle: '',
-    customTitle: '',
-    selectedSkills: [],
-    removedSkills: [],
-
-    // step 3
-    isMinting: false,
-    txHash: '',
-    claim: null,
-    showModal: false,
-    badge: null,
-    snippet: { markdown: '', html: '', badgeUrl: '', verifyUrl: '', twitter: '' },
-    copied: '',
-
-    async init() {
-      if (!GGSTAR.loaded) {
-        await loadGGStarConfig();
-        this.contractReady = /^0x[0-9a-fA-F]{40}$/.test(GGSTAR.contractAddress || '');
-        this.aiEnabled = GGSTAR.aiEnabled;
-        this.githubAuth = GGSTAR.githubAuth;
-      }
-      await this.loadMe();
-
-      if (window.ethereum) {
-        window.ethereum.on('accountsChanged', (accs) => {
-          this.walletAddress = accs && accs.length ? accs[0] : '';
-        });
-        window.ethereum.on('chainChanged', () => window.location.reload());
-      }
-    },
-
-    // loadMe pulls the session identity and the CSRF token the API expects.
-    async loadMe() {
-      try {
-        const res = await fetch('/api/me', { credentials: 'same-origin' });
-        if (!res.ok) return;
-        const me = await res.json();
-        this.signedIn = !!me.authenticated;
-        this.viewerLogin = me.login || '';
-        this.viewerAvatar = me.avatarUrl || '';
-        this.csrfToken = me.csrfToken || '';
-        this.signInUrl = me.signInUrl || '/auth/github';
-        this.signOutUrl = me.signOutUrl || '/auth/logout';
-      } catch (_) { /* stay anonymous */ }
-    },
-
-    async signOut() {
-      try {
-        await fetch(this.signOutUrl, {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'X-Csrf-Token': this.csrfToken },
-        });
-      } catch (_) { /* ignore */ }
-      window.location.href = '/';
-    },
-
-    // api wraps fetch so every state-changing call carries the CSRF token and a
-    // 401 sends the user to GitHub instead of failing silently.
-    async api(url, options = {}) {
-      const opts = { credentials: 'same-origin', ...options };
-      opts.headers = { ...(options.headers || {}) };
-      if (opts.body && !opts.headers['Content-Type']) {
-        opts.headers['Content-Type'] = 'application/json';
-      }
-      if (this.csrfToken) {
-        opts.headers['X-Csrf-Token'] = this.csrfToken;
-      }
-
-      const res = await fetch(url, opts);
-      if (res.status === 401) {
-        window.location.href = this.signInUrl;
-        throw new Error('Redirecting to GitHub sign-in…');
-      }
-      return res;
-    },
-
-    get shortAddr() {
-      if (!this.walletAddress) return '';
-      return this.walletAddress.slice(0, 6) + '…' + this.walletAddress.slice(-4);
-    },
-    get analyzedUsername() {
-      return this.result?.analysis?.username || this.username.trim();
-    },
-    // canMint mirrors the server-side gate in POST /api/token-uri.
-    get canMint() {
-      return this.signedIn
-        && !!this.viewerLogin
-        && this.viewerLogin.toLowerCase() === this.analyzedUsername.toLowerCase();
-    },
-    get avatarPadded() {
-      return String(this.selectedAvatar).padStart(3, '0');
-    },
-    get finalTitle() {
-      if (this.selectedTitle === '__custom__') return this.customTitle.trim() || 'Untitled';
-      return this.selectedTitle || '';
-    },
-    get unlockedAchievements() {
-      return (this.result?.achievements || []).filter(a => a.unlocked);
-    },
-    get txUrl() {
-      return GGSTAR.explorerUrl + '/tx/' + this.txHash;
-    },
-    get tweetUrl() {
-      if (this.snippet.twitter) return this.snippet.twitter;
-      const text = 'I just minted my soulbound Skill Badge on BOT Chain for @' +
-        (this.result?.analysis?.username || '') + ' (skill score ' +
-        (this.result?.analysis?.skillScore || 0) + '/100). @BOTChain_ai #BOTChain #RWA #SBT';
-      return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
-    },
-    get badgeApiUrl() {
-      return this.walletAddress ? '/api/badge/' + this.walletAddress : '#';
-    },
-
-    async connectWallet() {
-      if (!window.ethereum) {
-        this.error = 'MetaMask not detected. Install the extension to mint on BOT Chain.';
-        return;
-      }
-      this.connecting = true;
-      this.error = '';
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        this.walletAddress = accounts[0] || '';
-        await this.ensureNetwork();
-      } catch (e) {
-        this.error = e?.message || 'Wallet connection rejected.';
-      } finally {
-        this.connecting = false;
-      }
-    },
-
-    async ensureNetwork() {
-      try {
-        const current = await window.ethereum.request({ method: 'eth_chainId' });
-        this.chainId = current;
-        if (current.toLowerCase() === GGSTAR.chainIdHex.toLowerCase()) return;
-
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: GGSTAR.chainIdHex }]
-          });
-        } catch (switchErr) {
-          if (switchErr?.code !== 4902 && switchErr?.code !== -32603) throw switchErr;
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: GGSTAR.chainIdHex,
-              chainName: GGSTAR.chainName,
-              nativeCurrency: { name: 'BOT', symbol: GGSTAR.nativeSymbol || 'BOT', decimals: 18 },
-              rpcUrls: [GGSTAR.rpcUrl],
-              blockExplorerUrls: [GGSTAR.explorerUrl]
-            }]
-          });
-        }
-        this.chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      } catch (e) {
-        this.error = 'Could not switch to ' + GGSTAR.chainName + ': ' + (e?.message || e);
-      }
-    },
-
-    async analyze() {
-      const name = this.username.trim();
-      if (!name) return;
-
-      this.loading = true;
-      this.error = '';
-      this.showModal = false;
-      this.txHash = '';
-      this.claim = null;
-
-      try {
-        const res = await this.api('/api/analyze', {
-          method: 'POST',
-          body: JSON.stringify({ username: name, achievements: true })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Analysis failed');
-
-        this.result = data;
-        this.selectedSkills = [...(data.analysis.topSkills || [])];
-        this.removedSkills = [];
-        this.selectedTitle = (data.analysis.suggestedTitles || [])[0] || '__custom__';
-        this.customTitle = '';
-        this.selectedAvatar = 1;
-      } catch (e) {
-        this.error = e.message || 'Analysis failed';
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    removeSkill(index) {
-      const [removed] = this.selectedSkills.splice(index, 1);
-      if (removed) this.removedSkills.push(removed);
-    },
-    restoreSkill(index) {
-      const [restored] = this.removedSkills.splice(index, 1);
-      if (restored && !this.selectedSkills.includes(restored)) this.selectedSkills.push(restored);
-    },
-
-    async mintSBT() {
-      if (!this.walletAddress) { await this.connectWallet(); if (!this.walletAddress) return; }
-      if (!this.contractReady) { this.error = 'Contract address is not configured on the server.'; return; }
-      if (!this.selectedSkills.length) { this.error = 'Keep at least one skill on the badge.'; return; }
-      if (!this.signedIn) { window.location.href = this.signInUrl; return; }
-      if (!this.canMint) {
-        this.error = 'You can only mint a badge for @' + this.viewerLogin + '.';
-        return;
-      }
-
-      this.isMinting = true;
-      this.error = '';
-
-      try {
-        await this.ensureNetwork();
-
-        const uriRes = await this.api('/api/token-uri', {
-          method: 'POST',
-          body: JSON.stringify({
-            username: this.analyzedUsername,
-            title: this.finalTitle,
-            summary: this.result?.analysis?.summary || '',
-            dominantLanguage: this.result?.stats?.dominantLanguage || '',
-            skillScore: this.result?.analysis?.skillScore || 0,
-            totalStars: this.result?.stats?.totalStars || 0,
-            publicRepos: this.result?.stats?.ownRepos || 0,
-            followers: this.result?.stats?.followers || 0,
-            avatarId: this.selectedAvatar,
-            skills: this.selectedSkills
-          })
-        });
-        const uriData = await uriRes.json();
-        if (!uriRes.ok) throw new Error(uriData.error || 'Could not build metadata');
-
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const contract = new ethers.Contract(GGSTAR.contractAddress, GGSTAR.abi, signer);
-
-        const tx = await contract.mintBadge(
-          this.analyzedUsername,
-          this.selectedAvatar,
-          this.finalTitle,
-          this.result?.analysis?.skillScore || 0,
-          this.selectedSkills,
-          uriData.tokenUri
-        );
-        this.txHash = tx.hash;
-        await tx.wait();
-
-        // Ask the server to confirm the badge against the signed-in identity.
-        // A forged claim is recorded as unverified rather than hidden.
-        await this.verifyClaim();
-        await this.loadSnippet();
-        this.showModal = true;
-      } catch (e) {
-        this.error = this.friendlyError(e);
-      } finally {
-        this.isMinting = false;
-      }
-    },
-
-    async verifyClaim() {
-      if (!this.txHash) return;
-      try {
-        const res = await this.api('/api/claim', {
-          method: 'POST',
-          body: JSON.stringify({ txHash: this.txHash })
-        });
-        const data = await res.json();
-        this.claim = res.ok ? data : { verified: false, reason: data.error || 'verification failed' };
-      } catch (_) {
-        this.claim = { verified: false, reason: 'verification request failed' };
-      }
-    },
-
-    friendlyError(e) {
-      const msg = e?.error?.message || e?.data?.message || e?.message || String(e);
-      if (msg.includes('AlreadyMinted') || msg.includes('user rejected') === false && msg.includes('hasMinted')) {
-        return 'This wallet already minted a badge (1 badge per wallet).';
-      }
-      if (msg.includes('user rejected') || e?.code === 4001) return 'Transaction rejected in MetaMask.';
-      if (msg.includes('InvalidSkillScore')) return 'Skill score must be between 1 and 100.';
-      if (msg.includes('InvalidAvatarId')) return 'Avatar id must be between 1 and 100.';
-      if (msg.includes('Soulbound')) return 'This badge is soulbound and cannot be transferred.';
-      return msg;
-    },
-
-    async loadSnippet() {
-      try {
-        const res = await this.api('/api/snippet?address=' + this.walletAddress);
-        const data = await res.json();
-        if (res.ok) this.snippet = data;
-        this.badge = data.badge || null;
-      } catch (_) { /* snippet is best-effort */ }
-    },
-
-    async copy(text) {
-      if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        this.copied = 'Copied to clipboard ✅';
-        setTimeout(() => { this.copied = ''; }, 2000);
-      } catch (_) {
-        this.copied = 'Copy failed — select the text manually.';
-      }
-    }
-  };
-}
 </script>
+<script src="/public/app.js"></script>
 </body>
 </html>

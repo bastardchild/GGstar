@@ -26,7 +26,7 @@ const (
 	tokenURL     = "https://github.com/login/oauth/access_token"
 	userURL      = "https://api.github.com/user"
 
-	// Only the identity scope is requested. ggstar never needs write access.
+	// Only the identity scope is requested. GGstar never needs write access.
 	Scope = "read:user"
 )
 

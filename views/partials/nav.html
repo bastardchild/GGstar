@@ -1,0 +1,55 @@
+{{/* Shared navbar. .Active is "index", "leaderboard" or "achievements". */}}
+{{/* Index carries the wallet + identity controls; other pages use the slim variant. */}}
+{{if eq .Active "index"}}
+<header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/85 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
+    <div class="flex items-center gap-3">
+      <span class="text-xl font-bold text-pink-200">GGstar</span>
+      <span class="hidden rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-slate-400 sm:inline">
+        {{.NetworkName}} · {{.ChainID}}
+      </span>
+    </div>
+    <nav class="flex items-center gap-1 text-sm">
+      <a href="/" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Analyze</a>
+      <a href="/leaderboard" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Leaderboard</a>
+      <a href="/achievements" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Achievements</a>
+
+      <!-- GitHub identity: required to claim a profile -->
+      <template x-if="!signedIn">
+        <a :href="signInUrl"
+           class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 font-medium text-slate-200 hover:bg-slate-700">
+          {{template "icon-github" .}}<span>Sign in with GitHub</span>
+        </a>
+      </template>
+      <template x-if="signedIn">
+        <div class="ml-2 flex items-center gap-2">
+          <img :src="viewerAvatar" x-show="viewerAvatar" alt="" class="h-6 w-6 rounded-full border border-slate-600" />
+          <span class="rounded-lg bg-emerald-400/10 px-2.5 py-1 text-emerald-300" x-text="'@' + viewerLogin"></span>
+          <button @click="signOut()"
+                  class="rounded-lg border border-slate-600 px-2.5 py-1 text-slate-300 hover:bg-slate-800">
+            Sign out
+          </button>
+        </div>
+      </template>
+
+      <button @click="connectWallet()" :disabled="connecting"
+              class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
+        <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span>Connect</span></span>
+        <span x-show="connecting" x-text="'Connecting…'"></span>
+        <span x-show="walletAddress" x-text="shortAddr"></span>
+      </button>
+    </nav>
+  </div>
+</header>
+{{else}}
+<header class="border-b border-slate-800 bg-slate-900/85 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+    <a href="/" class="text-xl font-bold text-pink-200">GGstar</a>
+    <nav class="flex items-center gap-1 text-sm">
+      <a href="/" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Analyze</a>
+      <a href="/leaderboard" class="rounded-lg px-3 py-1.5 {{if eq .Active "leaderboard"}}bg-slate-800 text-pink-200{{else}}text-slate-300 hover:bg-slate-800{{end}}">Leaderboard</a>
+      <a href="/achievements" class="rounded-lg px-3 py-1.5 {{if eq .Active "achievements"}}bg-slate-800 text-pink-200{{else}}text-slate-300 hover:bg-slate-800{{end}}">Achievements</a>
+    </nav>
+  </div>
+</header>
+{{end}}

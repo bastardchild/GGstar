@@ -148,13 +148,16 @@ func newTestApp(t *testing.T) *testApp {
 		}
 		return c.JSON(fiber.Map{"tokenUri": "data:application/json;base64,e30="})
 	})
+	// Self-only analyze: the username always comes from the session, so the
+	// test double mirrors main.go and ignores any username in the body.
 	app.Post("/api/analyze", authRequired, func(c *fiber.Ctx) error {
 		var req struct {
 			Username string `json:"username"`
 		}
 		_ = c.BodyParser(&req)
-		owned, _ := serviceOwnership(mgr.Login(c), req.Username)
-		return c.JSON(fiber.Map{"owned": owned, "viewerLogin": mgr.Login(c)})
+		viewer := mgr.Login(c)
+		owned, _ := serviceOwnership(viewer, viewer)
+		return c.JSON(fiber.Map{"owned": owned, "viewerLogin": viewer})
 	})
 
 	return &testApp{app: app, mgr: mgr, svc: svc}
@@ -362,6 +365,8 @@ func TestUsernameComparisonIgnoresCase(t *testing.T) {
 	}
 }
 
+// TestAnalyzeMarksOwnership: analyze is self-only, so the result is always
+// the signed-in user's own profile, marked owned.
 func TestAnalyzeMarksOwnership(t *testing.T) {
 	ta := newTestApp(t)
 	s := ta.signIn(t, "alice")
@@ -372,12 +377,31 @@ func TestAnalyzeMarksOwnership(t *testing.T) {
 	if owned, _ := body["owned"].(bool); !owned {
 		t.Errorf("own profile should be marked owned: %v", body)
 	}
+	if login, _ := body["viewerLogin"].(string); !strings.EqualFold(login, "alice") {
+		t.Errorf("viewerLogin should be alice, got %v", body)
+	}
+}
 
-	resp = ta.post(t, s, "/api/analyze", `{"username":"torvalds"}`)
-	body = nil
-	_ = json.NewDecoder(resp.Body).Decode(&body)
-	if owned, _ := body["owned"].(bool); owned {
-		t.Errorf("somebody else's profile must not be owned: %v", body)
+// TestAnalyzeIgnoresBodyUsername is the self-only guarantee: even when the
+// body names somebody else, the analyzed profile is the session login.
+func TestAnalyzeIgnoresBodyUsername(t *testing.T) {
+	ta := newTestApp(t)
+	s := ta.signIn(t, "alice")
+
+	for _, body := range []string{`{"username":"torvalds"}`, `{}`, ``} {
+		resp := ta.post(t, s, "/api/analyze", body)
+		var got map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&got)
+		if resp.StatusCode != fiber.StatusOK {
+			t.Errorf("body %q = %d, want 200", body, resp.StatusCode)
+			continue
+		}
+		if login, _ := got["viewerLogin"].(string); !strings.EqualFold(login, "alice") {
+			t.Errorf("body %q analyzed %v, want alice's own profile", body, got)
+		}
+		if owned, _ := got["owned"].(bool); !owned {
+			t.Errorf("body %q should be marked owned: %v", body, got)
+		}
 	}
 }
 

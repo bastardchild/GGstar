@@ -88,8 +88,9 @@ type AnalyzeOptions struct {
 	IncludeAchievements bool
 
 	// ViewerLogin is the OAuth login of the signed-in user, or empty for an
-	// anonymous request. When it matches the analysed username the profile is
-	// recorded as owned and becomes eligible for the leaderboard.
+	// anonymous request. /api/analyze always passes the session login as both
+	// the analysed username and the viewer, so the profile is recorded as
+	// owned and becomes eligible for the leaderboard.
 	ViewerLogin string
 }
 
@@ -336,7 +337,7 @@ func BuildTokenURIWithBadge(username, title, summary, dominant string, score, to
 	}
 
 	payload := map[string]any{
-		"name":        fmt.Sprintf("ggstar Skill Badge - %s", username),
+		"name":        fmt.Sprintf("GGstar Skill Badge - %s", username),
 		"description": summary,
 		"image":       avatar.Path(avatarID),
 		"title":       title,

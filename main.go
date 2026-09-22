@@ -30,6 +30,8 @@ import (
 )
 
 type analyzeRequest struct {
+	// Username is accepted for backward compatibility but ignored: the
+	// analyzed profile always comes from the signed-in session.
 	Username     string `json:"username"`
 	Refresh      bool   `json:"refresh"`
 	Achievements *bool  `json:"achievements"`
@@ -350,12 +352,17 @@ func main() {
 	// Public pages and read APIs
 	//
 	// Judges must be able to open the site and use the product without a GitHub
-	// account. What stays gated is the identity claim: /api/analyze (writes the
-	// leaderboard), /api/token-uri and /api/claim.
+	// account. What stays gated is the identity claim: /api/analyze (self-only,
+	// writes the leaderboard), /api/token-uri and /api/claim.
 	// ------------------------------------------------------------------
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("index", pageData(c))
+		data := pageData(c)
+		data["Title"] = "GGstar - Verified GitHub Skill Badge on BOT Chain"
+		data["Active"] = "index"
+		data["WithEthers"] = true
+		data["WithAlpine"] = true
+		return c.Render("index", data)
 	})
 
 	app.Get("/leaderboard", func(c *fiber.Ctx) error {
@@ -364,6 +371,8 @@ func main() {
 			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 		}
 		data := pageData(c)
+		data["Title"] = "Leaderboard - GGstar"
+		data["Active"] = "leaderboard"
 		data["Leaders"] = rows
 		return c.Render("leaderboard", data)
 	})
@@ -374,6 +383,9 @@ func main() {
 			username = authMgr.Login(c)
 		}
 		data := pageData(c)
+		data["Title"] = "Achievements - GGstar"
+		data["Active"] = "achievements"
+		data["WithAlpine"] = true
 		data["Username"] = username
 		return c.Render("achievements", data)
 	})
@@ -384,24 +396,26 @@ func main() {
 
 	authRequired := authMgr.RequireAuth()
 
+	// Self-only analyze: the username always comes from the signed-in session.
+	// Any username sent in the body is ignored, so a user can only ever
+	// analyze their own GitHub profile with one click.
 	app.Post("/api/analyze", authRequired, rateLimit, func(c *fiber.Ctx) error {
 		var req analyzeRequest
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON body"})
 		}
-		if strings.TrimSpace(req.Username) == "" {
-			req.Username = strings.TrimSpace(c.FormValue("username"))
-		}
+
+		username := authMgr.Login(c)
 
 		includeAchievements := true
 		if req.Achievements != nil {
 			includeAchievements = *req.Achievements
 		}
 
-		result, err := svc.Analyze(c.Context(), req.Username, service.AnalyzeOptions{
+		result, err := svc.Analyze(c.Context(), username, service.AnalyzeOptions{
 			ForceRefresh:        req.Refresh,
 			IncludeAchievements: includeAchievements,
-			ViewerLogin:         authMgr.Login(c),
+			ViewerLogin:         username,
 		})
 		if err != nil {
 			return c.Status(service.HTTPStatusFor(err)).JSON(fiber.Map{"error": err.Error()})
@@ -418,9 +432,9 @@ func main() {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid github username"})
 		}
 
-		// The gate that makes "claim only your own profile" real on the honest
-		// path: metadata is never generated for a username the caller does not
-		// own, even though anyone may analyse anybody.
+		// Defense in depth: /api/analyze already forces the session login, but
+		// metadata is still never generated for a username the caller does not
+		// own.
 		viewer := authMgr.Login(c)
 		if !strings.EqualFold(viewer, req.Username) {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{

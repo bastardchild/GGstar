@@ -101,7 +101,7 @@ func Render(b model.Badge, explorerURL, contractAddress string) string {
 
 	title := truncate(b.CustomTitle, 34)
 	if title == "" {
-		title = "ggstar Badge Holder"
+		title = "GGstar Badge Holder"
 	}
 	skills := truncate(strings.Join(b.Skills, " · "), 42)
 	if skills == "" {
@@ -122,7 +122,7 @@ func Render(b model.Badge, explorerURL, contractAddress string) string {
 		avatarMarkup = nestAvatar(inline, avatarCX-avatarSize/2, avatarCY-avatarSize/2, avatarSize)
 	}
 
-	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="ggstar Skill Badge for %s">
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="GGstar Skill Badge for %s">
   <defs>
     <linearGradient id="gg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%%" stop-color="%s"/>
@@ -175,9 +175,9 @@ func Render(b model.Badge, explorerURL, contractAddress string) string {
 // Empty renders the "no badge yet" state.
 func Empty() string {
 	const w, h = 480, 110
-	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="No ggstar badge">
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img" aria-label="No GGstar badge">
   <rect x="1" y="1" width="%d" height="%d" rx="16" fill="%s" stroke="%s" stroke-opacity="0.4"/>
-  <text x="24" y="46" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="15" font-weight="700" fill="%s">ggstar AI</text>
+  <text x="24" y="46" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="15" font-weight="700" fill="%s">GGstar</text>
   <text x="24" y="72" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="%s">No soulbound badge yet - analyze a GitHub profile to mint one.</text>
   <text x="24" y="94" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="10" fill="%s">powered by BOT Chain</text>
 </svg>`, w, h, w, h, w-2, h-2, KawaiiTheme.Card, KawaiiTheme.Pink,
@@ -193,12 +193,12 @@ func Snippet(b model.Badge, baseURL, explorerURL, contractAddress string) map[st
 	}
 
 	htmlSnippet := fmt.Sprintf(`<a href="%s" target="_blank" rel="noopener">
-  <img src="%s" alt="ggstar Skill Badge" width="480" />
+  <img src="%s" alt="GGstar Skill Badge" width="480" />
 </a>`, verify, badgeURL)
 
-	mdSnippet := fmt.Sprintf(`[![ggstar Skill Badge](%s)](%s)`, badgeURL, verify)
+	mdSnippet := fmt.Sprintf(`[![GGstar Skill Badge](%s)](%s)`, badgeURL, verify)
 
-	inline := fmt.Sprintf(`[![ggstar](%s)](%s)`, badgeURL, verify)
+	inline := fmt.Sprintf(`[![GGstar](%s)](%s)`, badgeURL, verify)
 
 	return map[string]string{
 		"badgeUrl": badgeURL,
@@ -213,7 +213,7 @@ func Snippet(b model.Badge, baseURL, explorerURL, contractAddress string) map[st
 func buildTweet(b model.Badge, verifyURL string) string {
 	title := b.CustomTitle
 	if title == "" {
-		title = "ggstar Badge Holder"
+		title = "GGstar Badge Holder"
 	}
 	username := b.GithubUsername
 	if username == "" {

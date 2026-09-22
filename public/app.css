@@ -1,0 +1,34 @@
+/* ggstar AI shared styles. Tailwind (CDN) handles layout; this file holds
+   the custom theme: dark background, cards, tiers, and the star field. */
+
+:root { color-scheme: dark; }
+
+/* Layered color-only background: base slate with soft brand glows plus a
+   faint random star field (2px box-shadows at 0.5 opacity). Pure CSS. */
+body {
+  background:
+    radial-gradient(900px 500px at 12% -5%, rgba(255,182,193,.10), transparent 60%),
+    radial-gradient(800px 500px at 88% 8%, rgba(230,230,250,.08), transparent 60%),
+    radial-gradient(1000px 600px at 50% 110%, rgba(152,255,152,.06), transparent 60%),
+    #0F172A;
+  background-attachment: fixed;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  width: 2px; height: 2px; opacity: .5;
+  box-shadow: 58vw 51vh 0 0 #fff,91vw 69vh 0 0 #fff,75vw 68vh 0 0 #fff,52vw 15vh 0 0 #fff,4vw 22vh 0 0 #fff,28vw 99vh 0 0 #fff,71vw 67vh 0 0 #fff,36vw 25vh 0 0 #fff,10vw 89vh 0 0 #fff,84vw 83vh 0 0 #fff,45vw 28vh 0 0 #fff,84vw 4vh 0 0 #fff,76vw 96vh 0 0 #fff,80vw 11vh 0 0 #fff,33vw 64vh 0 0 #fff,5vw 26vh 0 0 #fff,50vw 76vh 0 0 #fff,27vw 51vh 0 0 #fff,0vw 57vh 0 0 #fff,55vw 65vh 0 0 #fff,70vw 85vh 0 0 #fff,81vw 22vh 0 0 #fff,83vw 42vh 0 0 #fff,91vw 13vh 0 0 #fff,84vw 28vh 0 0 #fff,1vw 48vh 0 0 #fff,2vw 15vh 0 0 #fff,93vw 24vh 0 0 #fff,32vw 61vh 0 0 #fff,73vw 58vh 0 0 #fff,80vw 60vh 0 0 #fff,62vw 8vh 0 0 #fff,26vw 7vh 0 0 #fff,90vw 97vh 0 0 #fff,23vw 81vh 0 0 #fff,22vw 42vh 0 0 #fff,7vw 2vh 0 0 #fff,14vw 35vh 0 0 #fff,54vw 99vh 0 0 #fff,42vw 37vh 0 0 #fff,35vw 62vh 0 0 #fff,41vw 2vh 0 0 #fff,75vw 43vh 0 0 #fff,82vw 17vh 0 0 #fff,68vw 52vh 0 0 #fff,76vw 62vh 0 0 #fff,48vw 41vh 0 0 #fff,23vw 1vh 0 0 #fff,32vw 54vh 0 0 #fff,28vw 98vh 0 0 #fff,82vw 59vh 0 0 #fff,9vw 95vh 0 0 #fff,58vw 59vh 0 0 #fff,12vw 9vh 0 0 #fff,83vw 66vh 0 0 #fff,46vw 78vh 0 0 #fff,64vw 86vh 0 0 #fff,33vw 12vh 0 0 #fff,45vw 6vh 0 0 #fff,90vw 34vh 0 0 #fff,70vw 50vh 0 0 #fff,6vw 9vh 0 0 #fff,53vw 44vh 0 0 #fff,95vw 2vh 0 0 #fff,94vw 93vh 0 0 #fff,60vw 62vh 0 0 #fff,52vw 46vh 0 0 #fff,51vw 23vh 0 0 #fff,21vw 9vh 0 0 #fff,33vw 99vh 0 0 #fff;
+}
+
+.card { background:#1E293B; }
+.glow { box-shadow:0 0 0 1px rgba(255,182,193,.25), 0 12px 40px -12px rgba(255,182,193,.35); }
+.chip { background:rgba(152,255,152,.12); border:1px solid rgba(152,255,152,.35); }
+
+.tier-common{background:rgba(148,163,184,.18);border:1px solid rgba(148,163,184,.5)}
+.tier-rare{background:rgba(221,160,221,.18);border:1px solid rgba(221,160,221,.55)}
+.tier-epic{background:rgba(250,204,21,.18);border:1px solid rgba(250,204,21,.55)}
+.tier-legendary{background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.55)}
+.locked{filter:grayscale(1);opacity:.35}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:9px}
+[x-cloak]{display:none!important}
