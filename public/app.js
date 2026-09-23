@@ -219,7 +219,7 @@ function ggstar() {
       // Self-only: the server ignores any username and analyzes the
       // signed-in account, so always send the session login.
       const name = (this.viewerLogin || '').trim();
-      if (!name || !this.signedIn) return;
+      if (!name || !this.signedIn || this.loading) return;
       this.username = name;
 
       this.loading = true;
@@ -259,6 +259,7 @@ function ggstar() {
     },
 
     async mintSBT() {
+      if (this.isMinting) return;
       if (!this.walletAddress) { await this.connectWallet(); if (!this.walletAddress) return; }
       if (!this.contractReady) { this.error = 'Contract address is not configured on the server.'; return; }
       if (!this.selectedSkills.length) { this.error = 'Keep at least one skill on the badge.'; return; }

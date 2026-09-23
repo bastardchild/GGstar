@@ -6,29 +6,40 @@ GGstar analyzes your GitHub profile with AI, lets you curate the result,
 then mints it as a **non-transferable ERC-721 (Soulbound Token)** on **BOT Chain Testnet (968)**.
 Anyone can verify the result on-chain, and holders can embed a badge in their README.
 
-Built for **Build Week Hackathon Vol.2 — Track AI & RWA**.
+Built for **Build Week Hackathon Vol.2 - Track AI & RWA**.
+
+---
+
+## How to use
+
+1. Open the live site and click **Sign in with GitHub**.
+2. Click **Analyze my skill** - your own GitHub profile is analyzed, no username to type.
+3. Curate the result: pick an avatar, choose a title, remove skills that do not fit.
+4. Click **Mint badge on BOT Chain** and confirm in MetaMask (BOT Chain Testnet, chain ID 968).
+5. Share: copy the Markdown snippet into a GitHub README, or post to X tagging `@BOTChain_ai`.
+6. Anyone can verify the badge on the explorer or at `/api/badge/<wallet>.svg` - no login needed.
 
 ---
 
 ## What it does
 
-1. **Sign in with GitHub** — OAuth (`read:user` only). The login comes from GitHub's
+1. **Sign in with GitHub** - OAuth (`read:user` only). The login comes from GitHub's
    `/user` endpoint, never from the browser.
-2. **Analyze** — one click fetches **your own** GitHub profile, repos, languages,
+2. **Analyze** - one click fetches **your own** GitHub profile, repos, languages,
    organisations and commit events, then computes a skill score, top skills,
    suggested titles and a summary. The username always comes from your GitHub
    login session; there is no username input to change.
-3. **Curate** — pick 1 of 100 unique avatars, choose a title (AI suggestion or custom),
+3. **Curate** - pick 1 of 100 unique avatars, choose a title (AI suggestion or custom),
    and **remove AI skills that do not fit**. Only the final list goes on-chain.
-4. **Mint** — MetaMask signs `mintBadge(...)`. Metadata is generated **server-side** into a
+4. **Mint** - MetaMask signs `mintBadge(...)`. Metadata is generated **server-side** into a
    `data:application/json;base64` URI, so the frontend cannot forge a badge.
    Minting is only allowed for **your own** GitHub account.
-5. **Verify** — the server reads the mint transaction back from the chain, matches the
+5. **Verify** - the server reads the mint transaction back from the chain, matches the
    `BadgeMinted` event against your OAuth login, and records the result. Badges whose owner
    never proved the username are shown as **⚠ Unverified claim**, not silently trusted.
-6. **Verify & share** — link straight to the explorer, one-click share to X tagging
+6. **Share** - link straight to the explorer, one-click share to X tagging
    `@BOTChain_ai`, and copy HTML/Markdown for a GitHub README.
-7. **Explore** — leaderboard by total stars (**registered users only**), plus a 40+
+7. **Explore** - leaderboard by total stars (**registered users only**), plus a 40+
    achievement grid derived from GitHub data.
 
 ---
@@ -36,7 +47,7 @@ Built for **Build Week Hackathon Vol.2 — Track AI & RWA**.
 ## Architecture
 
 ```
-Browser (Alpine.js + Ethers.js + Tailwind)
+Browser (Alpine.js + Ethers.js + Tailwind; shared CSS/JS in public/, pages in views/partials)
         │  fetch /api/analyze │ /api/token-uri │ /api/claim │ /api/badge/:addr.svg
         ▼
 Go Fiber backend ── SQLite (ggstar.db, WAL)  ← profiles, users, claims, sessions
@@ -70,7 +81,7 @@ generated at build time by `tools/genavatars`, which uses the official DiceBear 
 | | |
 |---|---|
 | Style | **Sprouts** (potted plants with faces) |
-| License | **CC0 1.0** — public domain, no attribution required, commercial use allowed |
+| License | **CC0 1.0** - public domain, no attribution required, commercial use allowed |
 | Library | `github.com/dicebear/dicebear-go/v10` + `github.com/dicebear/styles/v10` (pure Go, no cgo) |
 | Output | `public/avatars/001.svg` … `100.svg` (≈4 KB each) |
 | Determinism | same seed → byte-identical SVG, so regenerating never produces a diff |
@@ -108,7 +119,7 @@ In Docker the generation happens inside the builder stage, and `public/avatars/`
 
 ## Quick start (Docker only)
 
-No local Go, Node or Python needed — the toolchain runs in containers.
+No local Go, Node or Python needed - the toolchain runs in containers.
 
 ```bash
 cp .env.example .env      # then fill AI_API_KEY / GITHUB_TOKEN / OAuth / CONTRACT_ADDRESS
@@ -130,7 +141,7 @@ Sign-in is required to claim a profile, so an OAuth App is needed for local runs
    ```
    http://localhost:3000/auth/github/callback
    ```
-   (in production, `https://<your-domain>/auth/github/callback` — it must match
+   (in production, `https://<your-domain>/auth/github/callback` - it must match
    `PUBLIC_BASE_URL` + `/auth/github/callback` character for character, or GitHub returns
    `redirect_uri_mismatch`.)
 3. Copy the Client ID into `GITHUB_OAUTH_CLIENT_ID` and generate a client secret for
@@ -170,8 +181,9 @@ docker run --rm -v "$PWD:/w" -w /w node:22-alpine \
 
 | | |
 |---|---|
-| Contract address | `TBD — fill in after deploying` |
-| Explorer | `https://scan.botchain.ai/address/<address>` |
+| Contract address | `0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd` |
+| Deploy tx | `0x7e775b79f5b8af980d623725fed658f0dd7b9fbc1827dafb5c363280ae3dcd33` |
+| Explorer | `https://scan.botchain.ai/address/0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd` |
 | RPC | `https://rpc.botchain.ai` |
 
 Contract: `contracts/ggstarSkillSBT.sol` ("ggstar Skill Badge", symbol `KAWAII`),
@@ -184,10 +196,11 @@ the same wallet works on either chain.
 
 ## Deploying the contract (Remix)
 
-1. Open <https://remix.ethereum.org>, create `contracts/ggstarSkillSBT.sol`,
-   paste the file from this repo, and install `@openzeppelin/contracts@5.0.2` via the
-   Solidity compiler plugin (or import from GitHub).
-2. Compile with **Solidity 0.8.26**, optimizer enabled, 200 runs.
+1. Open <https://remix.ethereum.org>, create `ggstarSkillSBT.sol` and paste
+   `contracts/ggstarSkillSBT.flat.sol` from this repo (flattened: OpenZeppelin 5.0.2
+   already inlined, no imports to resolve).
+2. Compile with **Solidity 0.8.26**, optimizer enabled / 200 runs, EVM version
+   **`paris`** (never shanghai/cancun - PUSH0 risk on BOT Chain).
 3. In MetaMask add **BOT Chain Testnet**:
 
    | Field | Value |
@@ -195,7 +208,7 @@ the same wallet works on either chain.
    | Network name | BOT Chain Testnet |
    | RPC URL | `https://rpc.bohr.life` |
    | Chain ID | `968` (`0x3c8`) |
-   | Symbol | `TBOT` |
+   | Symbol | `BOT` |
    | Explorer | `https://scan.bohr.life` |
 
 4. Get test gas at <https://faucet.botchain.ai> (10 tBOT / 24 h).
@@ -203,14 +216,15 @@ the same wallet works on either chain.
 6. Put the address into `.env`:
 
    ```env
-   CONTRACT_ADDRESS=0xYourTestnetAddress
-   CONTRACT_ADDRESS_MAINNET=0xYourMainnetAddress
+   CONTRACT_ADDRESS=0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd
+   CONTRACT_ADDRESS_MAINNET=0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd
    ```
 
 7. Update `config/contract.json` (`contractAddress`, `deployTxHash`, `deployed: true`).
-   The ABI is already in that file — the frontend loads it from `/api/config`.
-8. Deploy the same contract to **BOT Chain Mainnet (677)** and repeat step 6 with the
-   mainnet address. The hackathon requires both, and the app is built to serve both.
+   The ABI is already in that file - the frontend loads it from `/api/config`.
+8. Deploy the same contract to **BOT Chain Mainnet (677)** (done - same address as
+   testnet, deploy tx `0x7e775b79f5b8af980d623725fed658f0dd7b9fbc1827dafb5c363280ae3dcd33`).
+   The hackathon requires both; the app reads mainnet first, then testnet.
 
 ---
 
@@ -239,8 +253,8 @@ the same wallet works on either chain.
 | `RPC_URL` | `https://rpc.bohr.life` | |
 | `EXPLORER_URL` | `https://scan.bohr.life` | testnet explorer |
 | `FAUCET_URL` | `https://faucet.botchain.ai` | |
-| `NATIVE_SYMBOL` | `TBOT` | |
-| `CONTRACT_ADDRESS` | *(empty)* | deploy output; empty → read-only mode |
+| `NATIVE_SYMBOL` | `BOT` | |
+| `CONTRACT_ADDRESS` | testnet address | deploy output; empty → minting disabled |
 | `RATE_LIMIT_PER_MIN` | `20` | per IP; applies to `/api/analyze`, `/api/token-uri`, `/api/claim` |
 
 > **Note:** `scan.botchain.ai` is the **mainnet (677)** explorer.
@@ -251,7 +265,7 @@ the same wallet works on either chain.
 
 ## API
 
-**Public** (no session required — the badge endpoints must stay open or every GitHub
+**Public** (no session required - the badge endpoints must stay open or every GitHub
 README embed breaks):
 
 | Method | Route | Purpose |
@@ -269,7 +283,7 @@ README embed breaks):
 
 | Method | Route | Purpose |
 |---|---|---|
-| `GET` | `/`, `/leaderboard`, `/achievements` | pages (redirect to GitHub when anonymous) |
+| `GET` | `/`, `/leaderboard`, `/achievements` | pages, fully public (no login needed to browse) |
 | `POST` | `/api/analyze` | `{refresh?, achievements?}` → analysis, stats, achievements for **your own** login (`username` in body is ignored) |
 | `POST` | `/api/token-uri` | server-generated metadata; **403** unless `username` == your login |
 | `POST` | `/api/claim` | `{txHash}` → verifies the mint against your identity on-chain |
@@ -281,7 +295,7 @@ README embed breaks):
 ### Authentication model
 
 Analysis is **self-only**: `POST /api/analyze` always analyzes the signed-in GitHub
-login — any username sent in the request body is ignored server-side, and the UI has
+login - any username sent in the request body is ignored server-side, and the UI has
 no username input to change. What OAuth gates is the **identity claim**:
 
 - The signed-in login comes from GitHub's `/user` endpoint and is stored server-side in
@@ -325,7 +339,7 @@ would let eviction silently log users out.
 10. Share to X with the `@BOTChain_ai` tag.
 
 Proving the negative is just as important: sign in as A, mint for B (via the console), and
-the badge widget renders **⚠ Unverified claim** — the badge is real on-chain, but it never
+the badge widget renders **⚠ Unverified claim** - the badge is real on-chain, but it never
 claims an identity it cannot prove.
 
 ---
@@ -348,7 +362,7 @@ claims an identity it cannot prove.
   path traversal and SSRF through the GitHub base URL.
 - **Score clamped 1..100** in the AI layer *and* re-checked on-chain (`InvalidSkillScore`).
 - **SVG output is XML-escaped** and length-capped, so profile text cannot inject markup.
-- **Only `read:user` is requested** from GitHub — the token cannot write to your account.
+- **Only `read:user` is requested** from GitHub - the token cannot write to your account.
 - **`.env` is never baked into the image** (`.dockerignore`) and is git-ignored.
 - **The `/api/badge/*` surface is intentionally public** and covered by a regression test,
   because gating it would break every README widget.
@@ -378,8 +392,11 @@ ggstar/
 │   ├── model/         shared types
 │   ├── service/       orchestration + tokenURI + claim verification
 │   └── sessionstore/  fiber.Storage on modernc sqlite (avoids cgo)
-├── views/             index / leaderboard / achievements
-├── public/avatars/    001.svg … 100.svg (generated at build time, not committed)
+├── views/             index / leaderboard / achievements + partials/ (head, nav, footer, icons)
+├── public/
+│   ├── app.css / app.js / achievements.js   shared styles + frontend logic
+│   ├── vendor/        Alpine.js, ethers.js (MIT, vendored)
+│   └── avatars/       001.svg … 100.svg (generated at build time, not committed)
 └── tools/
     ├── genavatars/    DiceBear Sprouts generator (own Go module)
     └── compile.js     recompiles the contract and refreshes the ABI
@@ -418,12 +435,12 @@ Covered:
 - **Lines of code** are not available from the GitHub API; byte counts per language
   (`/repos/{o}/{r}/languages`) are used instead.
 - **Cache TTLs**: analysis snapshot 10 min, star counts 24 h.
-- **Avatars are visually unique but not exclusive** — see the Avatars section above.
+- **Avatars are visually unique but not exclusive** - see the Avatars section above.
 - **On-chain identity is not cryptographically bound.** The server-side verification can
   flag a forged claim, but cannot prevent it. A signed attestation (`ecrecover` + nonce in
   the contract) would close this; it needs a redeploy.
 - **Sessions are single-node.** They live in SQLite, so running several app replicas would
-  require moving sessions to a shared store — carefully, without an LRU policy that drops
+  require moving sessions to a shared store - carefully, without an LRU policy that drops
   them.
 - **Deployment (VPS + Caddy + HTTPS) is not automated yet.** Redis is already wired
   (`CACHE_DRIVER=redis`) and a `redis:8-alpine` service is defined in

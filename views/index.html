@@ -40,13 +40,13 @@
         <p class="text-sm font-medium text-slate-300">Your GitHub profile</p>
         <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div class="flex-1 rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3 text-slate-200">
-            <span class="text-slate-500">@</span><span x-text="viewerLogin || 'â€”'"></span>
+            <span class="text-slate-500">@</span><span x-text="viewerLogin || '-'"></span>
           </div>
           <button @click="analyze()" :disabled="loading || !signedIn"
                   class="rounded-xl bg-gradient-to-r from-pink-300 to-purple-300 px-6 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
             <span x-show="!signedIn">Sign in to analyze</span>
             <span x-show="signedIn && !loading">Analyze my skill</span>
-            <span x-show="signedIn && loading">Analyzingâ€¦</span>
+            <span x-show="signedIn && loading">Analyzing</span>
           </button>
         </div>
         <p class="mt-2 text-xs text-slate-500" x-show="signedIn">
@@ -58,7 +58,7 @@
       <div x-show="loading" class="card mt-5 rounded-2xl p-5">
         <div class="flex items-center gap-3 text-slate-300">
           <span class="h-3 w-3 animate-ping rounded-full bg-pink-300"></span>
-          <span>Reading GitHub profile, repos, organisations and commit eventsâ€¦</span>
+          <span>Reading GitHub profile, repos, organisations and commit events</span>
         </div>
         <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
           <div class="h-full w-1/2 animate-pulse rounded-full bg-gradient-to-r from-pink-300 to-emerald-300"></div>
@@ -112,14 +112,14 @@
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Stars</dt><dd class="font-semibold" x-text="result?.stats?.totalStars ?? 0"></dd></div>
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Repos</dt><dd class="font-semibold" x-text="result?.stats?.ownRepos ?? 0"></dd></div>
             <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Followers</dt><dd class="font-semibold" x-text="result?.stats?.followers ?? 0"></dd></div>
-            <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Lang</dt><dd class="truncate font-semibold" x-text="result?.stats?.dominantLanguage || 'â€”'"></dd></div>
+            <div class="rounded-lg bg-slate-900/60 px-2 py-1.5"><dt class="text-slate-500">Lang</dt><dd class="truncate font-semibold" x-text="result?.stats?.dominantLanguage || '-'"></dd></div>
           </dl>
         </div>
 
         <button @click="mintSBT()" :disabled="isMinting || !contractReady || !selectedSkills.length || !canMint"
                 class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-300 to-teal-300 px-5 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
           <span x-show="!isMinting">Mint badge on BOT Chain</span>
-          <span x-show="isMinting">Waiting for walletâ€¦</span>
+          <span x-show="isMinting">Waiting for wallet</span>
         </button>
         <p class="mt-2 text-center text-[11px] text-rose-300" x-show="!contractReady">
           CONTRACT_ADDRESS is not set. Deploy the contract (Fase 1) and restart the app.
@@ -143,7 +143,7 @@
           </template>
         </div>
         <p class="mt-2 text-center text-[11px] text-emerald-300" x-show="result && canMint">
-          Minting as <span x-text="'@' + viewerLogin"></span> â€” ownership will be verified on-chain after minting.
+          Minting as <span x-text="'@' + viewerLogin"></span> - ownership will be verified on-chain after minting.
         </p>
       </div>
 
@@ -182,13 +182,13 @@
           <input x-show="selectedTitle === '__custom__'" x-model="customTitle" maxlength="60"
                  placeholder="e.g. Go backend developer"
                  class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm outline-none focus:border-pink-300/60" />
-          <p class="mt-2 text-[11px] text-slate-500">Final title: <span class="text-pink-200" x-text="finalTitle || 'â€”'"></span></p>
+          <p class="mt-2 text-[11px] text-slate-500">Final title: <span class="text-pink-200" x-text="finalTitle || '-'"></span></p>
         </div>
 
         <div class="card rounded-2xl p-5">
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Curate your skills</h2>
-            <span class="text-[11px] text-slate-500">Suggestions â€” remove what does not fit</span>
+            <span class="text-[11px] text-slate-500">Suggestions - remove what does not fit</span>
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
             <template x-for="(s, i) in selectedSkills" :key="s + 'sel' + i">
@@ -201,7 +201,7 @@
           </div>
 
           <div class="mt-4 border-t border-slate-800 pt-3" x-show="removedSkills.length">
-            <p class="text-[11px] text-slate-500">Removed â€” click to restore</p>
+            <p class="text-[11px] text-slate-500">Removed - click to restore</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <template x-for="(s, i) in removedSkills" :key="s + 'rm' + i">
                 <button @click="restoreSkill(i)"
@@ -238,7 +238,7 @@
               <li class="flex items-center justify-between gap-3 py-2">
                 <div class="min-w-0">
                   <p class="truncate font-medium" x-text="r.name"></p>
-                  <p class="truncate text-[11px] text-slate-500" x-text="r.description || 'â€”'"></p>
+                  <p class="truncate text-[11px] text-slate-500" x-text="r.description || '-'"></p>
                 </div>
                 <span class="shrink-0 text-xs text-amber-300">â˜… <span x-text="r.stars"></span></span>
               </li>
@@ -262,7 +262,7 @@
 
       <div class="mt-4 rounded-xl bg-slate-900/70 p-3 text-xs">
         <p class="text-slate-500">Transaction</p>
-        <a class="break-all text-pink-200 hover:underline" :href="txUrl" target="_blank" rel="noopener" x-text="txHash || 'â€”'"></a>
+        <a class="break-all text-pink-200 hover:underline" :href="txUrl" target="_blank" rel="noopener" x-text="txHash || '-'"></a>
       </div>
 
       <!-- Ownership verification result -->
@@ -278,11 +278,11 @@
           <p>
             <strong>Unverified claim.</strong>
             <span x-text="claim.reason || 'ownership could not be proven'"></span>
-            The badge is on-chain but its README widget will show â€œUnverified claimâ€.
+            The badge is on-chain but its README widget will show "Unverified claim".
           </p>
         </template>
         <template x-if="!claim">
-          <p>Checking ownership on-chainâ€¦</p>
+          <p>Checking ownership on-chain…</p>
         </template>
       </div>
 
