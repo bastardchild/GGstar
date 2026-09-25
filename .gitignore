@@ -13,7 +13,6 @@
 /ggstar
 /ggstar.exe
 /tmp/
-vendor/
 
 # node (hanya untuk kompilasi kontrak via tools/compile.js)
 node_modules/
