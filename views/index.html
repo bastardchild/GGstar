@@ -52,6 +52,9 @@
         <p class="mt-2 text-xs text-slate-500" x-show="signedIn">
           One click analyzes the GitHub account you signed in with. To analyze another profile, sign out and sign in with that account.
         </p>
+        <p class="mt-1 text-xs text-emerald-300" x-show="result?.analysis?.source === 'db'">
+          Showing your saved analysis. Click above to refresh it from GitHub.
+        </p>
         <p class="mt-3 rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-300" x-show="error" x-text="error"></p>
       </div>
 
@@ -72,6 +75,22 @@
       <!-- Live preview -->
       <div class="lg:sticky lg:top-20 lg:self-start">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Live badge preview</h2>
+        <div x-show="alreadyMinted" class="mb-3 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 p-4">
+          <p class="text-sm font-semibold text-emerald-200">
+            ✓ Badge minted · Token #<span x-text="existingBadge.tokenId ?? 0"></span>
+          </p>
+          <p class="mt-1 truncate text-xs text-emerald-200/70" x-text="existingBadge.customTitle || ''"></p>
+          <p class="mt-1 text-[11px]">
+            <span x-show="existingBadge.verified" class="text-emerald-300">GitHub verified<span x-show="existingBadge.verifiedLogin" x-text="' @' + existingBadge.verifiedLogin"></span></span>
+            <span x-show="!existingBadge.verified" class="text-amber-300">Unverified claim</span>
+          </p>
+          <div class="mt-2 flex flex-wrap gap-2 text-xs">
+            <a :href="mintedTokenUrl" target="_blank" rel="noopener"
+               class="rounded-lg bg-slate-800 px-3 py-1.5 text-pink-200 hover:bg-slate-700">View on explorer ↗</a>
+            <button @click="openWidget()"
+                    class="rounded-lg bg-slate-800 px-3 py-1.5 text-pink-200 hover:bg-slate-700">Copy widget</button>
+          </div>
+        </div>
         <div class="card glow rounded-2xl p-5">
           <div class="flex items-center gap-4">
 <img :src="'/public/avatars/' + avatarPadded + '.svg'" alt="avatar"
@@ -116,10 +135,15 @@
           </dl>
         </div>
 
-        <button @click="mintSBT()" :disabled="isMinting || !contractReady || !selectedSkills.length || !canMint"
+        <button @click="mintSBT()" :disabled="isMinting || checkingBadge || alreadyMinted || !contractReady || !selectedSkills.length || !canMint"
                 class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-300 to-teal-300 px-5 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
-          <span x-show="!isMinting">Mint badge on BOT Chain</span>
+          <span x-show="!isMinting && !alreadyMinted">Mint badge on BOT Chain</span>
+          <span x-show="!isMinting && alreadyMinted">Already minted ✓</span>
           <span x-show="isMinting">Waiting for wallet</span>
+        </button>
+        <button @click="openWidget()" x-show="walletAddress && !isMinting"
+                class="mt-2 w-full rounded-xl border border-slate-700 px-5 py-2.5 text-sm text-slate-300 hover:border-pink-300/50">
+          Copy badge widget
         </button>
         <p class="mt-2 text-center text-[11px] text-rose-300" x-show="!contractReady">
           CONTRACT_ADDRESS is not set. Deploy the contract (Fase 1) and restart the app.
@@ -284,6 +308,11 @@
         <template x-if="!claim">
           <p>Checking ownership on-chain…</p>
         </template>
+        <button @click="recheckClaim()" x-show="showRecheck" :disabled="rechecking"
+                class="mt-2 text-xs text-pink-200 hover:underline disabled:opacity-50">
+          <span x-show="!rechecking">Recheck ownership</span>
+          <span x-show="rechecking">Checking…</span>
+        </button>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">

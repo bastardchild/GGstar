@@ -28,8 +28,12 @@ type ProfileRow struct {
 	SuggestedTitles []string
 	Summary         string
 	DominantLang    string
+	AvatarURL       string
+	PublicRepos     int
+	Followers       int
 	TotalStars      int
 	StarsUpdatedAt  string
+	TopReposJSON    string
 	UpdatedAt       string
 }
 

@@ -17,6 +17,7 @@ import (
 	"ggstar/internal/config"
 	"ggstar/internal/contract"
 	"ggstar/internal/db"
+	"ggstar/internal/model"
 	"ggstar/internal/service"
 	"ggstar/internal/sessionstore"
 
@@ -49,6 +50,20 @@ func proxyHeader(trustProxy bool) string {
 		return ""
 	}
 	return fiber.HeaderXForwardedFor
+}
+
+// isWalletAddress is a strict 0x + 40 hex check for wallet query params.
+func isWalletAddress(s string) bool {
+	if len(s) != 42 || !strings.HasPrefix(s, "0x") {
+		return false
+	}
+	for _, r := range s[2:] {
+		if r >= '0' && r <= '9' || r >= 'a' && r <= 'f' || r >= 'A' && r <= 'F' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 type tokenURIRequest struct {
@@ -197,12 +212,16 @@ func main() {
 			"MainnetContractAddr": cfg.MainnetContractAddr,
 			"AIEnabled":     svc.AIEnabled(),
 			"GitHubAuth":    cfg.GitHubAuthenticated(),
-			"ProfileCount":  svc.CountProfiles(),
-			"UserCount":     svc.CountUsers(),
-			"OAuthEnabled":  cfg.OAuthEnabled(),
-			"ViewerLogin":   authMgr.Login(c),
-		}
+		"ProfileCount":  svc.CountProfiles(),
+		"UserCount":     svc.CountUsers(),
+		"OAuthEnabled":  cfg.OAuthEnabled(),
+		"ViewerLogin":   authMgr.Login(c),
+		// NavIsolated makes the shared header boot its own ggstarNav()
+		// scope (public/nav.js). Pages carrying the full ggstar() app
+		// (index) leave it false so the header shares the mint flow state.
+		"NavIsolated": false,
 	}
+}
 
 	// Runtime config for the frontend: keeps the ABI out of template escaping.
 	app.Get("/api/config", func(c *fiber.Ctx) error {
@@ -373,6 +392,9 @@ func main() {
 		data := pageData(c)
 		data["Title"] = "Leaderboard - GGstar"
 		data["Active"] = "leaderboard"
+		data["NavIsolated"] = true
+		data["WithAlpine"] = true
+		data["WithEthers"] = true
 		data["Leaders"] = rows
 		return c.Render("leaderboard", data)
 	})
@@ -386,6 +408,8 @@ func main() {
 		data["Title"] = "Achievements - GGstar"
 		data["Active"] = "achievements"
 		data["WithAlpine"] = true
+		data["WithEthers"] = true
+		data["NavIsolated"] = true
 		data["Username"] = username
 		return c.Render("achievements", data)
 	})
@@ -395,6 +419,21 @@ func main() {
 	// ------------------------------------------------------------------
 
 	authRequired := authMgr.RequireAuth()
+
+	// Saved analysis for the signed-in login. Lets the frontend restore the
+	// last result (preview, curation, mint) without re-running the GitHub + AI
+	// pipeline on every page load. 404 with found:false simply means "never
+	// analyzed", which is not an error.
+	app.Get("/api/my-analysis", authRequired, func(c *fiber.Ctx) error {
+		result, found, err := svc.MyAnalysis(authMgr.Login(c))
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		if !found {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"found": false})
+		}
+		return c.JSON(result)
+	})
 
 	// Self-only analyze: the username always comes from the signed-in session.
 	// Any username sent in the body is ignored, so a user can only ever
@@ -553,10 +592,28 @@ func main() {
 		}
 
 		badge, err := svc.GetBadge(c.Context(), address)
-		if err != nil {
-			return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
+		if err == nil && badge.Found {
+			return c.JSON(badgesvg.Snippet(badge, c.BaseURL(), cfg.ExplorerURL, cfg.ContractAddr))
 		}
-		return c.JSON(badgesvg.Snippet(badge, c.BaseURL(), cfg.ExplorerURL, cfg.ContractAddr))
+
+		// The badge may simply not be readable yet (RPC lag right after mint)
+		// or the node may be hiccuping. Still return a usable snippet for a
+		// well-formed address so the copy widget is never empty: the SVG URL
+		// renders an empty state until the badge exists, and verify points at
+		// the explorer root instead of a token page that might not exist yet.
+		// (Passing an empty contract makes Snippet fall back to the root.)
+		if !isWalletAddress(address) {
+			status := fiber.StatusBadGateway
+			if err == nil {
+				status = fiber.StatusNotFound
+			}
+			msg := "no badge for this address"
+			if err != nil {
+				msg = err.Error()
+			}
+			return c.Status(status).JSON(fiber.Map{"error": msg})
+		}
+		return c.JSON(badgesvg.Snippet(model.Badge{Address: address}, c.BaseURL(), cfg.ExplorerURL, ""))
 	})
 
 	go func() {

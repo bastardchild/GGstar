@@ -1,12 +1,17 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"ggstar/internal/cache"
+	"ggstar/internal/config"
+	"ggstar/internal/db"
 	"ggstar/internal/model"
 )
 
@@ -186,4 +191,92 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// newSavedAnalysisService seeds one stored profile (as Analyze would) and
+// returns a Service reading it. MyAnalysis must never touch the network.
+func newSavedAnalysisService(t *testing.T) *Service {
+	t.Helper()
+
+	store, err := db.Open(filepath.Join(t.TempDir(), "myanalysis.db"))
+	if err != nil {
+		t.Fatalf("db.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	a := model.Analysis{
+		Username: "torvalds", SkillScore: 88,
+		TopSkills:       []string{"C", "Rust"},
+		SuggestedTitles: []string{"Kernel Whisperer"},
+		Summary:         "Ships kernels.", DominantLang: "C",
+		AvatarURL:   "https://avatars.githubusercontent.com/u/1024025",
+		PublicRepos: 9, Followers: 100, TotalStars: 500,
+	}
+	if err := store.UpsertProfile(a, true, "torvalds"); err != nil {
+		t.Fatalf("UpsertProfile: %v", err)
+	}
+	if err := store.SaveTopRepos("torvalds",
+		`[{"name":"linux","description":"kernel","language":"C","stars":500,"topics":[]}]`); err != nil {
+		t.Fatalf("SaveTopRepos: %v", err)
+	}
+	if err := store.ReplaceAchievements("torvalds", []db.AchievementRow{
+		{Key: "partymember", Name: "Party Member", Tier: "common"},
+	}); err != nil {
+		t.Fatalf("ReplaceAchievements: %v", err)
+	}
+	if err := store.ReplaceOrgs("torvalds", []string{"linux"}); err != nil {
+		t.Fatalf("ReplaceOrgs: %v", err)
+	}
+
+	cacheStore, err := cache.New(context.Background(), cache.Config{Driver: cache.DriverMemory})
+	if err != nil {
+		t.Fatalf("cache.New: %v", err)
+	}
+	t.Cleanup(func() { _ = cacheStore.Close() })
+
+	return New(config.Config{}, store, cacheStore)
+}
+
+func TestMyAnalysisUnknownLogin(t *testing.T) {
+	svc := newSavedAnalysisService(t)
+
+	if _, found, err := svc.MyAnalysis("ghost"); err != nil || found {
+		t.Errorf("unknown login: found=%v err=%v, want not found", found, err)
+	}
+	if _, found, err := svc.MyAnalysis(""); err != nil || found {
+		t.Errorf("empty login: found=%v err=%v, want not found", found, err)
+	}
+}
+
+func TestMyAnalysisRoundTrip(t *testing.T) {
+	svc := newSavedAnalysisService(t)
+
+	res, found, err := svc.MyAnalysis("torvalds")
+	if err != nil || !found {
+		t.Fatalf("MyAnalysis: found=%v err=%v", found, err)
+	}
+	if res.Analysis.Username != "torvalds" || res.Analysis.SkillScore != 88 {
+		t.Errorf("unexpected analysis: %+v", res.Analysis)
+	}
+	if len(res.Analysis.TopSkills) != 2 || res.Analysis.TopSkills[0] != "C" {
+		t.Errorf("top skills not restored: %v", res.Analysis.TopSkills)
+	}
+	if res.Analysis.Source != "db" || !res.Owned || res.ViewerLogin != "torvalds" {
+		t.Errorf("ownership/source not set: %+v", res.Analysis)
+	}
+	if len(res.Stats.TopRepos) != 1 || res.Stats.TopRepos[0].Name != "linux" {
+		t.Errorf("top repos not restored: %+v", res.Stats.TopRepos)
+	}
+	if res.Stats.MaxRepoStars != 500 || res.Stats.TotalStars != 500 {
+		t.Errorf("star stats wrong: %+v", res.Stats)
+	}
+	if res.Stats.OrgCount != 1 {
+		t.Errorf("org count = %d, want 1", res.Stats.OrgCount)
+	}
+	if res.Stats.UnlockedCount != 1 {
+		t.Errorf("unlocked count = %d, want 1", res.Stats.UnlockedCount)
+	}
+	if len(res.Achievements) == 0 {
+		t.Error("expected a non-empty achievements catalogue")
+	}
 }

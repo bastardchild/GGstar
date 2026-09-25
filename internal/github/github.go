@@ -78,6 +78,11 @@ type Snapshot struct {
 
 	FetchedAt time.Time `json:"fetchedAt"`
 	Requests  int       `json:"requests"`
+
+	// ReposPartial is true when the repo list could not be fetched completely
+	// (e.g. a paged request failed after earlier pages succeeded). Totals
+	// derived from such a snapshot must be shown but never persisted as fact.
+	ReposPartial bool `json:"reposPartial"`
 }
 
 type Client struct {
@@ -286,6 +291,7 @@ func (c *Client) BuildSnapshot(ctx context.Context, username string, langRepos i
 		return nil, err
 	}
 	snap.Repos = repos
+	snap.ReposPartial = err != nil
 	snap.Requests += 3
 
 	if orgs, err := c.GetOrgs(ctx, username); err == nil {

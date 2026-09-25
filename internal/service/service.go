@@ -253,6 +253,20 @@ func (s *Service) Analyze(ctx context.Context, username string, opts AnalyzeOpti
 	}
 
 	refreshStars := !s.store.StarsFresh(username, starsTTL)
+	if !refreshStars {
+		// Self-healing: a stored zero is never trustworthy (it usually means a
+		// rate-limited or degraded fetch was persisted), so retry the count
+		// regardless of the 24h TTL instead of freezing the zero for a day.
+		if row, found, err := s.store.GetProfile(username); err == nil && found && row.TotalStars == 0 {
+			refreshStars = true
+		}
+	}
+	if snap.ReposPartial {
+		// A degraded repo list may undercount stars. Show the partial total,
+		// but never persist it and never stamp stars_updated_at, so the next
+		// analyze retries immediately instead of caching a bad number.
+		refreshStars = false
+	}
 
 	// Ownership is only recorded when the analysed username is the signed-in
 	// user. A viewer looking at somebody else's profile must never claim it.
@@ -260,6 +274,11 @@ func (s *Service) Analyze(ctx context.Context, username string, opts AnalyzeOpti
 
 	if err := s.store.UpsertProfile(analysis, refreshStars, ownerLogin); err != nil {
 		return AnalyzeResult{}, err
+	}
+	if topReposJSON, err := json.Marshal(topRepos); err == nil {
+		if err := s.store.SaveTopRepos(username, string(topReposJSON)); err != nil {
+			return AnalyzeResult{}, err
+		}
 	}
 
 	unlocked := []db.AchievementRow{}
@@ -353,6 +372,79 @@ func BuildTokenURIWithBadge(username, title, summary, dominant string, score, to
 
 func (s *Service) Leaders(limit int) ([]db.LeaderRow, error) {
 	return s.store.Leaderboard(limit)
+}
+
+// MyAnalysis rebuilds the last saved analysis for the signed-in login, so the
+// frontend can restore the full result (preview, curation, mint) without
+// calling the GitHub API and AI again. Fields that were never persisted
+// (languages, account age) come back empty; the UI already handles that.
+//
+// found is false when this login never analyzed, which is not an error: the
+// frontend simply shows the initial "Analyze" state.
+func (s *Service) MyAnalysis(login string) (AnalyzeResult, bool, error) {
+	login = strings.TrimSpace(login)
+	if login == "" {
+		return AnalyzeResult{}, false, nil
+	}
+
+	row, found, err := s.store.GetProfile(login)
+	if err != nil {
+		return AnalyzeResult{}, false, err
+	}
+	if !found {
+		return AnalyzeResult{}, false, nil
+	}
+
+	var topRepos []ai.RepoBrief
+	if row.TopReposJSON != "" {
+		_ = json.Unmarshal([]byte(row.TopReposJSON), &topRepos)
+	}
+	maxStars := 0
+	for _, r := range topRepos {
+		if r.Stars > maxStars {
+			maxStars = r.Stars
+		}
+	}
+
+	unlocked, err := s.store.Achievements(login)
+	if err != nil {
+		return AnalyzeResult{}, false, err
+	}
+	catalogue := achievements.Catalogue(unlocked)
+
+	analysis := model.Analysis{
+		Username:        row.Username,
+		AvatarURL:       row.AvatarURL,
+		SkillScore:      row.SkillScore,
+		TopSkills:       row.TopSkills,
+		SuggestedTitles: row.SuggestedTitles,
+		Summary:         row.Summary,
+		DominantLang:    row.DominantLang,
+		PublicRepos:     row.PublicRepos,
+		Followers:       row.Followers,
+		TotalStars:      row.TotalStars,
+		Source:          "db",
+		UpdatedAt:       row.UpdatedAt,
+	}
+
+	return AnalyzeResult{
+		Analysis:     analysis,
+		Profile:      analysis,
+		Achievements: catalogue,
+		Stats: AnalyzeStats{
+			DominantLanguage: row.DominantLang,
+			TotalStars:       row.TotalStars,
+			MaxRepoStars:     maxStars,
+			OwnRepos:         row.PublicRepos,
+			Followers:        row.Followers,
+			OrgCount:         s.store.OrgCount(login),
+			TopRepos:         topRepos,
+			Source:           "db",
+			UnlockedCount:    len(unlocked),
+		},
+		Owned:       true,
+		ViewerLogin: login,
+	}, true, nil
 }
 
 func (s *Service) Achievements(username string) ([]achievements.CatalogueEntry, error) {

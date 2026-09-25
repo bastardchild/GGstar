@@ -55,7 +55,10 @@ function ggstar() {
 
     // step 3
     isMinting: false,
+    rechecking: false,
     txHash: '',
+    existingBadge: null,
+    checkingBadge: false,
     claim: null,
     showModal: false,
     badge: null,
@@ -70,10 +73,12 @@ function ggstar() {
         this.githubAuth = GGSTAR.githubAuth;
       }
       await this.loadMe();
+      await this.loadSaved();
 
       if (window.ethereum) {
         window.ethereum.on('accountsChanged', (accs) => {
           this.walletAddress = accs && accs.length ? accs[0] : '';
+          this.checkMinted();
         });
         window.ethereum.on('chainChanged', () => window.location.reload());
       }
@@ -166,6 +171,24 @@ function ggstar() {
     get badgeApiUrl() {
       return this.walletAddress ? '/api/badge/' + this.walletAddress : '#';
     },
+    // alreadyMinted drives the "sudah mint" marker: banner + disabled mint
+    // button, so nobody discovers the 1-badge-per-wallet rule via a revert.
+    get alreadyMinted() {
+      return !!(this.existingBadge && this.existingBadge.found);
+    },
+    get mintedTokenUrl() {
+      if (!this.alreadyMinted) return '#';
+      return GGSTAR.explorerUrl + '/token/' + GGSTAR.contractAddress +
+        '?tokenId=' + (this.existingBadge.tokenId ?? 0);
+    },
+    // showRecheck is true when ownership is unproven for a reason a retry
+    // could fix (pending tx, RPC hiccup). A username mismatch is final, so
+    // no retry is offered for it.
+    get showRecheck() {
+      if (!this.txHash || this.claim?.verified) return false;
+      const r = this.claim?.reason || '';
+      return !r.includes('badge claims @');
+    },
 
     async connectWallet() {
       if (!window.ethereum) {
@@ -178,10 +201,34 @@ function ggstar() {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         this.walletAddress = accounts[0] || '';
         await this.ensureNetwork();
+        await this.checkMinted();
       } catch (e) {
         this.error = e?.message || 'Wallet connection rejected.';
       } finally {
         this.connecting = false;
+      }
+    },
+
+    // checkMinted asks the server whether this wallet already owns a badge.
+    // Cheap (one read-only call) and the single source for the minted marker.
+    async checkMinted() {
+      if (!this.walletAddress) {
+        this.existingBadge = null;
+        return;
+      }
+      this.checkingBadge = true;
+      try {
+        const res = await this.api('/api/badge/' + this.walletAddress);
+        if (res.status === 404) {
+          this.existingBadge = null;
+          return;
+        }
+        const data = await res.json();
+        this.existingBadge = res.ok && data.badge ? data.badge : null;
+      } catch (_) {
+        this.existingBadge = null;
+      } finally {
+        this.checkingBadge = false;
       }
     },
 
@@ -236,17 +283,37 @@ function ggstar() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Analysis failed');
 
-        this.result = data;
-        this.selectedSkills = [...(data.analysis.topSkills || [])];
-        this.removedSkills = [];
-        this.selectedTitle = (data.analysis.suggestedTitles || [])[0] || '__custom__';
-        this.customTitle = '';
-        this.selectedAvatar = 1;
+        this.hydrate(data);
       } catch (e) {
         this.error = e.message || 'Analysis failed';
       } finally {
         this.loading = false;
       }
+    },
+
+    // hydrate fills the result state from an analysis payload. It is shared
+    // by analyze() (fresh) and loadSaved() (from the server-side store).
+    hydrate(data) {
+      this.result = data;
+      this.selectedSkills = [...(data.analysis.topSkills || [])];
+      this.removedSkills = [];
+      this.selectedTitle = (data.analysis.suggestedTitles || [])[0] || '__custom__';
+      this.customTitle = '';
+      this.selectedAvatar = 1;
+    },
+
+    // loadSaved restores the last stored analysis so a page reload does not
+    // force the user through the GitHub + AI pipeline again. A 404 simply
+    // means "never analyzed" and is not an error.
+    async loadSaved() {
+      if (!this.signedIn) return;
+      try {
+        const res = await this.api('/api/my-analysis');
+        if (res.status === 404) return;
+        const data = await res.json();
+        if (!res.ok) return;
+        this.hydrate(data);
+      } catch (_) { /* stay in the initial state */ }
     },
 
     removeSkill(index) {
@@ -311,6 +378,7 @@ function ggstar() {
         // Ask the server to confirm the badge against the signed-in identity.
         // A forged claim is recorded as unverified rather than hidden.
         await this.verifyClaim();
+        await this.checkMinted();
         await this.loadSnippet();
         this.showModal = true;
       } catch (e) {
@@ -346,13 +414,55 @@ function ggstar() {
       return msg;
     },
 
-    async loadSnippet() {
+    async loadSnippet(retries = 3) {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const res = await this.api('/api/snippet?address=' + this.walletAddress);
+          const data = await res.json();
+          if (res.ok && (data.markdown || data.html)) {
+            this.snippet = data;
+            this.badge = data.badge || null;
+            return;
+          }
+        } catch (_) { /* retry below */ }
+        if (attempt < retries - 1) {
+          await new Promise(r => setTimeout(r, 2500));
+        }
+      }
+      // Last resort: build a usable snippet locally so the copy boxes are
+      // never empty, even when the chain cannot be read right now.
+      this.snippet = this.fallbackSnippet();
+      this.badge = null;
+    },
+
+    fallbackSnippet() {
+      const badgeUrl = window.location.origin + '/api/badge/' + this.walletAddress + '.svg';
+      const verify = this.txHash ? GGSTAR.explorerUrl + '/tx/' + this.txHash : GGSTAR.explorerUrl;
+      const markdown = `[![GGstar Skill Badge](${badgeUrl})](${verify})`;
+      const html = `<a href="${verify}" target="_blank" rel="noopener">\n  <img src="${badgeUrl}" alt="GGstar Skill Badge" width="480" />\n</a>`;
+      return { markdown, html, badgeUrl, verifyUrl: verify, twitter: '' };
+    },
+
+    // openWidget reopens the badge modal on demand (e.g. after it was closed
+    // or the page was reloaded), so the copy widget is never lost.
+    async openWidget() {
+      if (!this.walletAddress) {
+        await this.connectWallet();
+        if (!this.walletAddress) return;
+      }
+      await this.loadSnippet();
+      this.showModal = true;
+    },
+
+    async recheckClaim() {
+      if (this.rechecking || !this.txHash) return;
+      this.rechecking = true;
       try {
-        const res = await this.api('/api/snippet?address=' + this.walletAddress);
-        const data = await res.json();
-        if (res.ok) this.snippet = data;
-        this.badge = data.badge || null;
-      } catch (_) { /* snippet is best-effort */ }
+        await this.verifyClaim();
+        await this.loadSnippet(1);
+      } finally {
+        this.rechecking = false;
+      }
     },
 
     async copy(text) {

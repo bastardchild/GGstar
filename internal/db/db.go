@@ -123,16 +123,26 @@ CREATE INDEX IF NOT EXISTS idx_claims_username ON claims (github_username);
 // "ADD COLUMN IF NOT EXISTS", so the pragma is inspected first to keep the
 // migration idempotent.
 func (s *Store) migrateColumns() error {
-	has, err := s.hasColumn("profiles", "owner_login")
-	if err != nil {
-		return err
+	columns := map[string]string{
+		"owner_login": "TEXT",
+		// NOT NULL with a default so pre-existing rows are backfilled with
+		// '[]' instead of NULL (which database/sql cannot scan into string).
+		"top_repos": "TEXT NOT NULL DEFAULT '[]'",
 	}
-	if has {
-		return nil
-	}
+	for column, def := range columns {
+		has, err := s.hasColumn("profiles", column)
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
 
-	_, err = s.db.Exec(`ALTER TABLE profiles ADD COLUMN owner_login TEXT`)
-	return err
+		if _, err := s.db.Exec(`ALTER TABLE profiles ADD COLUMN ` + column + ` ` + def); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) hasColumn(table, column string) (bool, error) {
@@ -225,10 +235,12 @@ func (s *Store) GetProfile(username string) (model.ProfileRow, bool, error) {
 
 	err := s.db.QueryRow(`
 SELECT github_username, skill_score, top_skills, suggested_titles, summary,
-       dominant_lang, total_stars, COALESCE(stars_updated_at, ''), updated_at
+       dominant_lang, avatar_url, public_repos, followers,
+       total_stars, COALESCE(stars_updated_at, ''), COALESCE(top_repos, '[]'), updated_at
 FROM profiles WHERE github_username = ?`, username).
 		Scan(&row.Username, &row.SkillScore, &topSkills, &titles, &row.Summary,
-			&row.DominantLang, &row.TotalStars, &starsUpdated, &row.UpdatedAt)
+			&row.DominantLang, &row.AvatarURL, &row.PublicRepos, &row.Followers,
+			&row.TotalStars, &starsUpdated, &row.TopReposJSON, &row.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return model.ProfileRow{}, false, nil
 	}
@@ -240,6 +252,27 @@ FROM profiles WHERE github_username = ?`, username).
 	row.SuggestedTitles = decodeList(titles)
 	row.StarsUpdatedAt = starsUpdated.String
 	return row, true, nil
+}
+
+// SaveTopRepos persists the "top repositories" panel of an analysis so a saved
+// analysis can be re-rendered without calling the GitHub API again. It runs as
+// part of Analyze, right after UpsertProfile.
+func (s *Store) SaveTopRepos(username, topReposJSON string) error {
+	if topReposJSON == "" {
+		topReposJSON = "[]"
+	}
+	_, err := s.db.Exec(`UPDATE profiles SET top_repos = ?, updated_at = CURRENT_TIMESTAMP
+WHERE github_username = ?`, topReposJSON, username)
+	return err
+}
+
+// OrgCount returns how many organisations are recorded for a profile.
+func (s *Store) OrgCount(username string) int {
+	var n int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM orgs WHERE github_username = ?`, username).Scan(&n); err != nil {
+		return 0
+	}
+	return n
 }
 
 func (s *Store) StarsFresh(username string, maxAge time.Duration) bool {

@@ -11,8 +11,8 @@
       <div class="flex flex-wrap items-center justify-center gap-2 text-xs">
         <a href="https://botchain.ai" target="_blank" rel="noopener"
            class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">botchain.ai ↗</a>
-        <a href="https://scan.botchain.ai/address/0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd?tab=txs" target="_blank" rel="noopener"
-         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a> 
+        {{if .MainnetContractAddr}}<a href="{{.MainnetExplorerURL}}/address/{{.MainnetContractAddr}}?tab=txs" target="_blank" rel="noopener"
+         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>{{end}} 
       </div>
     </div>
     <p class="mt-4 border-t border-slate-800 pt-4 text-center text-[11px] text-slate-600">
@@ -27,8 +27,8 @@
     <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs">
       <a href="https://botchain.ai" target="_blank" rel="noopener"
          class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">botchain.ai ↗</a>
-      <a href="https://scan.botchain.ai/address/0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd?tab=txs" target="_blank" rel="noopener"
-         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>      
+      {{if .MainnetContractAddr}}<a href="{{.MainnetExplorerURL}}/address/{{.MainnetContractAddr}}?tab=txs" target="_blank" rel="noopener"
+         class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>{{end}}      
     </div>
     <p class="mt-4 border-t border-slate-800 pt-4 text-[11px] text-slate-600">
       {{if eq .Active "leaderboard"}}{{.NetworkName}} · chain {{.ChainID}} · {{.UserCount}} registered users · {{.ProfileCount}} profiles indexed{{else}}{{.NetworkName}} · chain {{.ChainID}} · push-based achievements use the last 90 days of events{{end}}

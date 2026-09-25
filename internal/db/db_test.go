@@ -371,3 +371,52 @@ func TestReplaceOrgs(t *testing.T) {
 	}
 	// No public getter needed; ensure the second replace did not error.
 }
+
+func TestMigrateAddsTopReposColumn(t *testing.T) {
+	store := newTestStore(t)
+
+	for _, col := range []string{"owner_login", "top_repos"} {
+		has, err := store.hasColumn("profiles", col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !has {
+			t.Errorf("expected column profiles.%s after migrate", col)
+		}
+	}
+}
+
+func TestTopReposAndProfileFieldsRoundTrip(t *testing.T) {
+	store := newTestStore(t)
+
+	if err := store.UpsertProfile(sampleAnalysis(), true, ""); err != nil {
+		t.Fatal(err)
+	}
+	const repos = `[{"name":"linux","description":"kernel","language":"C","stars":100,"topics":[]}]`
+	if err := store.SaveTopRepos("torvalds", repos); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.ReplaceOrgs("torvalds", []string{"linux", "git"}); err != nil {
+		t.Fatal(err)
+	}
+
+	row, found, err := store.GetProfile("torvalds")
+	if err != nil || !found {
+		t.Fatalf("GetProfile: found=%v err=%v", found, err)
+	}
+	if row.AvatarURL != "https://avatars.githubusercontent.com/u/1024025" {
+		t.Errorf("avatar not read back: %q", row.AvatarURL)
+	}
+	if row.PublicRepos != 9 || row.Followers != 324427 {
+		t.Errorf("repos/followers not read back: %+v", row)
+	}
+	if row.TopReposJSON != repos {
+		t.Errorf("top repos not round-tripped: %q", row.TopReposJSON)
+	}
+	if n := store.OrgCount("torvalds"); n != 2 {
+		t.Errorf("OrgCount = %d, want 2", n)
+	}
+	if n := store.OrgCount("ghost"); n != 0 {
+		t.Errorf("OrgCount unknown user = %d, want 0", n)
+	}
+}
