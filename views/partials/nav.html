@@ -2,17 +2,48 @@
 {{/* Index carries the wallet + identity controls; other pages use the slim variant. */}}
 {{if eq .Active "index"}}
 <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/85 backdrop-blur">
-  <div class="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
-    <div class="flex min-w-0 items-center gap-3">
+  <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-5">
+    <div class="flex min-w-0 shrink-0 items-center gap-3">
       <span class="truncate text-xl font-bold text-pink-200">GGstar</span>
-      <span class="hidden rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-slate-400 sm:inline">
+      <span class="hidden rounded-full bg-slate-800 px-2.5 py-1 text-[11px] text-slate-400 xl:inline">
         {{.NetworkName}} · {{.ChainID}}
       </span>
     </div>
-    <div class="flex shrink-0 items-center gap-2">
+    <nav class="hidden items-center gap-1 text-sm md:flex" aria-label="Primary">
+      <a href="/" class="rounded-lg bg-slate-800 px-3 py-1.5 text-pink-200">Analyze</a>
+      <a href="/leaderboard" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Leaderboard</a>
+      <a href="/achievements" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Achievements</a>
+    </nav>
+    <span class="flex-1"></span>
+    <div class="hidden shrink-0 items-center gap-2 md:flex">
+      <!-- GitHub identity: required to claim a profile -->
+      <template x-if="!signedIn">
+        <a :href="signInUrl"
+           class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700">
+          {{template "icon-github" .}}<span>Sign in with GitHub</span>
+        </a>
+      </template>
+      <template x-if="signedIn">
+        <div class="flex items-center gap-2">
+          <img :src="viewerAvatar" x-show="viewerAvatar" alt="" class="h-6 w-6 rounded-full border border-slate-600" />
+          <span class="max-w-[140px] truncate rounded-lg bg-emerald-400/10 px-2.5 py-1 text-sm text-emerald-300" x-text="'@' + viewerLogin"></span>
+          <button @click="signOut()"
+                  class="whitespace-nowrap rounded-lg border border-slate-600 px-2.5 py-1 text-sm text-slate-300 hover:bg-slate-800">
+            Sign out
+          </button>
+        </div>
+      </template>
+      <button @click="connectWallet()" :disabled="connecting"
+              class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 text-sm font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
+        <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span>Connect</span></span>
+        <span x-show="connecting" x-text="'Connecting…'"></span>
+        <span x-show="walletAddress" x-text="shortAddr"></span>
+      </button>
+    </div>
+    <div class="flex shrink-0 items-center gap-2 md:hidden">
       <button @click="connectWallet()" :disabled="connecting"
               class="inline-flex items-center gap-1.5 rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 text-sm font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
-        <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span class="hidden sm:inline">Connect</span><span class="sm:hidden">Connect</span></span>
+        <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span>Connect</span></span>
         <span x-show="connecting" x-text="'Connecting…'"></span>
         <span x-show="walletAddress" x-text="shortAddr"></span>
       </button>
@@ -23,30 +54,6 @@
       </button>
     </div>
   </div>
-  <nav class="mx-auto hidden max-w-6xl items-center gap-1 px-4 pb-1 text-sm sm:px-5 md:flex md:px-5" aria-label="Primary">
-    <a href="/" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Analyze</a>
-    <a href="/leaderboard" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Leaderboard</a>
-    <a href="/achievements" class="rounded-lg px-3 py-1.5 text-slate-300 hover:bg-slate-800">Achievements</a>
-    <span class="flex-1"></span>
-
-    <!-- GitHub identity: required to claim a profile -->
-    <template x-if="!signedIn">
-      <a :href="signInUrl"
-         class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 font-medium text-slate-200 hover:bg-slate-700">
-        {{template "icon-github" .}}<span>Sign in with GitHub</span>
-      </a>
-    </template>
-    <template x-if="signedIn">
-      <div class="flex items-center gap-2">
-        <img :src="viewerAvatar" x-show="viewerAvatar" alt="" class="h-6 w-6 rounded-full border border-slate-600" />
-        <span class="max-w-[140px] truncate rounded-lg bg-emerald-400/10 px-2.5 py-1 text-emerald-300" x-text="'@' + viewerLogin"></span>
-        <button @click="signOut()"
-                class="rounded-lg border border-slate-600 px-2.5 py-1 text-slate-300 hover:bg-slate-800">
-          Sign out
-        </button>
-      </div>
-    </template>
-  </nav>
   <!-- Mobile panel: page links + identity, toggled by the hamburger above. -->
   <nav id="gg-nav-mobile" class="mx-auto hidden max-w-6xl flex-col gap-1 px-4 pb-3 text-sm sm:px-5 md:hidden" aria-label="Mobile">
     <a href="/" onclick="document.getElementById('gg-nav-mobile').classList.add('hidden');document.getElementById('gg-nav-mobile').classList.remove('flex')" class="rounded-lg px-3 py-2 text-slate-200 hover:bg-slate-800">Analyze</a>
