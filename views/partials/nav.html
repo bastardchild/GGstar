@@ -40,7 +40,7 @@
               class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 text-sm font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
         <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span>Connect</span></span>
         <span x-show="connecting" x-text="'Connecting…'"></span>
-        <span x-show="walletAddress" x-text="shortAddr"></span>
+        <span x-show="walletAddress" :title="walletAddress" class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-emerald-400"></span>Connected</span>
       </button>
     </div>
     <div class="flex shrink-0 items-center gap-2 md:hidden">
@@ -48,7 +48,7 @@
               class="inline-flex items-center gap-1.5 rounded-lg border border-pink-300/40 bg-pink-300/10 px-3 py-1.5 text-sm font-medium text-pink-200 hover:bg-pink-300/20 disabled:opacity-50">
         <span x-show="!walletAddress && !connecting" class="inline-flex items-center gap-1.5">{{template "icon-metamask" .}}<span>Connect</span></span>
         <span x-show="connecting" x-text="'Connecting…'"></span>
-        <span x-show="walletAddress" x-text="shortAddr"></span>
+        <span x-show="walletAddress" :title="walletAddress" class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-emerald-400"></span>Connected</span>
       </button>
       <button type="button" aria-label="Menu" aria-expanded="false"
               onclick="var p=document.getElementById('gg-nav-mobile');var h=p.classList.toggle('hidden');p.classList.toggle('flex',!h);this.setAttribute('aria-expanded',String(!h))"

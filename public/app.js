@@ -81,6 +81,15 @@ function ggstar() {
           this.checkMinted();
         });
         window.ethereum.on('chainChanged', () => window.location.reload());
+        // Passive reconnect (no popup): after a reload, show the wallet that is
+        // already authorized and restore the minted marker + copy widget.
+        try {
+          const accs = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accs && accs.length) {
+            this.walletAddress = accs[0];
+            this.checkMinted();
+          }
+        } catch (_) { /* stay disconnected */ }
       }
     },
 
