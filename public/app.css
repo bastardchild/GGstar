@@ -32,3 +32,9 @@ body::before {
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:#334155;border-radius:9px}
 [x-cloak]{display:none!important}
+
+/* Responsive guards: never allow page-level horizontal scroll from tables,
+   long hashes/snippets, or wide flex rows. */
+img{max-width:100%}
+pre{white-space:pre-wrap;word-break:break-all}
+table{border-collapse:collapse}

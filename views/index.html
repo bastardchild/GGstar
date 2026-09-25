@@ -154,7 +154,7 @@
             <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Pick an avatar</h2>
             <span class="text-[11px] text-slate-500">100 avatars Â· 128Ã-128</span>
           </div>
-          <div class="mt-3 grid max-h-64 grid-cols-10 gap-1.5 overflow-y-auto pr-1">
+          <div class="mt-3 grid max-h-64 grid-cols-5 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-8 lg:grid-cols-10">
             <template x-for="n in 100" :key="n">
               <button @click="selectedAvatar = n"
                       class="aspect-square overflow-hidden rounded-lg border transition"
