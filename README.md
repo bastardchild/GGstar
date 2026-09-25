@@ -8,11 +8,13 @@ Anyone can verify the result on-chain, and holders can embed a badge in their RE
 
 Built for **Build Week Hackathon Vol.2 - Track AI & RWA**.
 
+🌐 **Live: https://ggstar.sbs** (contracts on BOT Chain Testnet 968 and Mainnet 677 - see Deployment).
+
 ---
 
 ## How to use
 
-1. Open the live site and click **Sign in with GitHub**.
+1. Open https://ggstar.sbs and click **Sign in with GitHub**.
 2. Click **Analyze my skill** - your own GitHub profile is analyzed, no username to type.
 3. Curate the result: pick an avatar, choose a title, remove skills that do not fit.
 4. Click **Mint badge on BOT Chain** and confirm in MetaMask (BOT Chain Testnet, chain ID 968).
@@ -141,7 +143,7 @@ Sign-in is required to claim a profile, so an OAuth App is needed for local runs
    ```
    http://localhost:3000/auth/github/callback
    ```
-   (in production, `https://<your-domain>/auth/github/callback` - it must match
+   (in production, `https://ggstar.sbs/auth/github/callback` - it must match
    `PUBLIC_BASE_URL` + `/auth/github/callback` character for character, or GitHub returns
    `redirect_uri_mismatch`.)
 3. Copy the Client ID into `GITHUB_OAUTH_CLIENT_ID` and generate a client secret for
@@ -188,6 +190,14 @@ docker run --rm -v "$PWD:/w" -w /w node:22-alpine \
 
 Contract: `contracts/ggstarSkillSBT.sol` ("ggstar Skill Badge", symbol `KAWAII`),
 Solc **0.8.26**, optimizer enabled / **200 runs**, OpenZeppelin **5.0.2**.
+
+**Production:** https://ggstar.sbs (`PUBLIC_BASE_URL=https://ggstar.sbs`,
+`COOKIE_SECURE=true`, `CACHE_DRIVER=redis`, OAuth callback
+`https://ggstar.sbs/auth/github/callback`).
+
+**For judges:** the mainnet contract page is
+`https://scan.botchain.ai/address/0x00D3f8529785daBB3C45d6cfdC7837d7812559Bd?tab=txs`
+(same link as the footer "BOT Chain Explorer" button on the live site).
 
 The app reads both networks: badge lookups try mainnet first, then fall back to testnet, so
 the same wallet works on either chain.
@@ -426,27 +436,6 @@ Covered:
 | `db` | round-trip, star TTL preservation, **leaderboard excludes searched profiles**, ownership survives an anonymous lookup, registered-user requirement, user upsert/rename, claim round-trip |
 | `achievements` | ladder thresholds, UTC schedules, locked/unlocked catalogue |
 | `service` | username validation, base64 metadata validity, `image` follows `avatarId`, ownership decision matrix |
-
----
-
-## Limitations & roadmap
-
-- **Push-based achievements** only see the last ~90 days (GitHub Events API limit).
-- **Lines of code** are not available from the GitHub API; byte counts per language
-  (`/repos/{o}/{r}/languages`) are used instead.
-- **Cache TTLs**: analysis snapshot 10 min, star counts 24 h.
-- **Avatars are visually unique but not exclusive** - see the Avatars section above.
-- **On-chain identity is not cryptographically bound.** The server-side verification can
-  flag a forged claim, but cannot prevent it. A signed attestation (`ecrecover` + nonce in
-  the contract) would close this; it needs a redeploy.
-- **Sessions are single-node.** They live in SQLite, so running several app replicas would
-  require moving sessions to a shared store - carefully, without an LRU policy that drops
-  them.
-- **Deployment (VPS + Caddy + HTTPS) is not automated yet.** Redis is already wired
-  (`CACHE_DRIVER=redis`) and a `redis:8-alpine` service is defined in
-  `docker-compose.yml`.
-- **Not included** (documented as future work): community forum gated by SBT ownership
-  (forum sign-in, threads, replies, one-vote-per-address).
 
 ---
 
