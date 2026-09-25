@@ -34,7 +34,7 @@
               <span class="font-medium">@{{$r.Username}}</span>
             </a>
           </td>
-          <td class="px-4 py-3 text-right font-semibold whitespace-nowrap text-amber-300">★ {{$r.TotalStars}}</td>
+          <td class="px-4 py-3 text-right font-semibold whitespace-nowrap text-amber-300"><span class="inline-flex items-center justify-end gap-1">{{template "icon-star" .}}<span>{{$r.TotalStars}}</span></span></td>
           <td class="px-4 py-3 text-right whitespace-nowrap text-emerald-300">{{$r.SkillScore}}</td>
           <td class="hidden px-4 py-3 text-slate-400 sm:table-cell">{{if $r.TopSkill}}{{$r.TopSkill}}{{else}}-{{end}}</td>
         </tr>
