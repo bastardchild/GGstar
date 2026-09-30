@@ -77,12 +77,12 @@
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Live badge preview</h2>
         <div x-show="alreadyMinted" class="mb-3 rounded-2xl border border-emerald-300/40 bg-emerald-400/10 p-4">
           <p class="text-sm font-semibold text-emerald-200">
-            ✓ Badge minted · Token #<span x-text="existingBadge.tokenId ?? 0"></span>
+            ✓ Badge minted · Token #<span x-text="existingBadge?.tokenId ?? 0"></span>
           </p>
-          <p class="mt-1 truncate text-xs text-emerald-200/70" x-text="existingBadge.customTitle || ''"></p>
+          <p class="mt-1 truncate text-xs text-emerald-200/70" x-text="existingBadge?.customTitle || ''"></p>
           <p class="mt-1 text-[11px]">
-            <span x-show="existingBadge.verified" class="text-emerald-300">GitHub verified<span x-show="existingBadge.verifiedLogin" x-text="' @' + existingBadge.verifiedLogin"></span></span>
-            <span x-show="!existingBadge.verified" class="text-amber-300">Unverified claim</span>
+            <span x-show="existingBadge?.verified" class="text-emerald-300">GitHub verified<span x-show="existingBadge?.verifiedLogin" x-text="' @' + (existingBadge?.verifiedLogin || '')"></span></span>
+            <span x-show="!existingBadge?.verified" class="text-amber-300">Unverified claim</span>
           </p>
           <div class="mt-2 flex flex-wrap gap-2 text-xs">
             <a :href="mintedTokenUrl" target="_blank" rel="noopener"

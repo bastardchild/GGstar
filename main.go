@@ -397,6 +397,9 @@ func main() {
 		data["Active"] = "index"
 		data["WithEthers"] = true
 		data["WithAlpine"] = true
+		// Pages are dynamic per session (counts, identity); never let the
+		// browser serve a stale copy that mismatches the cached JS/CSS.
+		c.Set("Cache-Control", "no-store")
 		return c.Render("index", data)
 	})
 
@@ -412,6 +415,7 @@ func main() {
 		data["WithAlpine"] = true
 		data["WithEthers"] = true
 		data["Leaders"] = rows
+		c.Set("Cache-Control", "no-store")
 		return c.Render("leaderboard", data)
 	})
 
@@ -427,6 +431,7 @@ func main() {
 		data["WithEthers"] = true
 		data["NavIsolated"] = true
 		data["Username"] = username
+		c.Set("Cache-Control", "no-store")
 		return c.Render("achievements", data)
 	})
 
