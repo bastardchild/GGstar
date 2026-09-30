@@ -20,6 +20,7 @@ function ggstarNav() {
     navRpcUrl: '',
     navExplorerUrl: '',
     navNativeSymbol: 'BOT',
+    navMainnet: null,
 
     async init() {
       await this.loadConfig();
@@ -53,6 +54,7 @@ function ggstarNav() {
         this.navRpcUrl = cfg.rpcUrl || '';
         this.navExplorerUrl = cfg.explorerUrl || '';
         this.navNativeSymbol = cfg.nativeSymbol || 'BOT';
+        this.navMainnet = cfg.mainnet || null;
       } catch (_) { /* defaults stand */ }
     },
 
@@ -86,6 +88,31 @@ function ggstarNav() {
       return this.walletAddress.slice(0, 6) + '…' + this.walletAddress.slice(-4);
     },
 
+    // Active network, shared with the index page via localStorage
+    // ('ggstar-net', written by app.js switchNetwork). Falls back to testnet
+    // when nothing was picked or mainnet is unconfigured.
+    get net() {
+      let wantMainnet = false;
+      try {
+        wantMainnet = localStorage.getItem('ggstar-net') === 'mainnet';
+      } catch (_) { /* private mode: testnet */ }
+      const m = this.navMainnet;
+      if (wantMainnet && m && /^0x[0-9a-fA-F]{40}$/.test(m.contractAddress || '')) {
+        return {
+          chainIdHex: m.chainIdHex || '',
+          chainName: m.name || 'BOT Chain Mainnet',
+          rpcUrl: m.rpcUrl || '',
+          explorerUrl: m.explorerUrl || '',
+        };
+      }
+      return {
+        chainIdHex: this.navChainIdHex,
+        chainName: this.navChainName,
+        rpcUrl: this.navRpcUrl,
+        explorerUrl: this.navExplorerUrl,
+      };
+    },
+
     async connectWallet() {
       if (!window.ethereum) return;
       this.connecting = true;
@@ -101,27 +128,28 @@ function ggstarNav() {
     // No error surface exists in the slim header, so a failed auto-switch
     // must never toast or throw.
     async ensureNetwork() {
-      if (!window.ethereum || !this.navChainIdHex) return;
+      const net = this.net;
+      if (!window.ethereum || !net.chainIdHex) return;
       try {
         const current = await window.ethereum.request({ method: 'eth_chainId' });
         this.chainId = current;
-        if (current.toLowerCase() === this.navChainIdHex.toLowerCase()) return;
+        if (current.toLowerCase() === net.chainIdHex.toLowerCase()) return;
 
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: this.navChainIdHex }]
+            params: [{ chainId: net.chainIdHex }]
           });
         } catch (switchErr) {
           if (switchErr?.code !== 4902 && switchErr?.code !== -32603) throw switchErr;
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: this.navChainIdHex,
-              chainName: this.navChainName,
+              chainId: net.chainIdHex,
+              chainName: net.chainName,
               nativeCurrency: { name: 'BOT', symbol: this.navNativeSymbol || 'BOT', decimals: 18 },
-              rpcUrls: [this.navRpcUrl],
-              blockExplorerUrls: [this.navExplorerUrl]
+              rpcUrls: [net.rpcUrl],
+              blockExplorerUrls: [net.explorerUrl]
             }]
           });
         }

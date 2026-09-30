@@ -63,6 +63,10 @@ func DecideOwnershipForTest(viewerLogin, analyzed string) (bool, string) {
 
 func (s *Service) Chain() *chain.Client { return s.chain }
 
+// ChainMain is the mainnet (677) read client, or an unconfigured client when
+// no mainnet contract address is set.
+func (s *Service) ChainMain() *chain.Client { return s.chainMain }
+
 func (s *Service) AIEnabled() bool { return s.ai.Enabled() }
 
 // StartBackground begins the periodic cache sweeper.

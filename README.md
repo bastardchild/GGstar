@@ -17,7 +17,8 @@ Built for **Build Week Hackathon Vol.2 - Track AI & RWA**.
 1. Open https://ggstar.sbs and click **Sign in with GitHub**.
 2. Click **Analyze my skill** - your own GitHub profile is analyzed, no username to type.
 3. Curate the result: pick an avatar, choose a title, remove skills that do not fit.
-4. Click **Mint badge on BOT Chain** and confirm in MetaMask (BOT Chain Testnet, chain ID 968).
+4. Pick the mint network (Testnet 968 is free; Mainnet 677 spends real BOT), then click
+   **Mint badge** and confirm in MetaMask.
 5. Share: copy the Markdown snippet into a GitHub README, or post to X tagging `@BOTChain_ai`.
 6. Anyone can verify the badge on the explorer or at `/api/badge/<wallet>.svg` - no login needed.
 
@@ -202,6 +203,13 @@ Solc **0.8.26**, optimizer enabled / **200 runs**, OpenZeppelin **5.0.2**.
 The app reads both networks: badge lookups try mainnet first, then fall back to testnet, so
 the same wallet works on either chain.
 
+**Minting on either network:** the Analyze page has a Testnet/Mainnet toggle above the
+Mint button (Mainnet option appears only when `CONTRACT_ADDRESS_MAINNET` is set).
+Mainnet mints spend real BOT; testnet is free via the faucet. One badge per wallet
+**per chain**. Claim verification, the minted marker, and the README widget all
+follow whichever chain the badge is on (the server records the per-chain explorer
+URL with each badge read).
+
 ---
 
 ## Deploying the contract (Remix)
@@ -337,11 +345,13 @@ would let eviction silently log users out.
 ## Verification flow (Definition of Done)
 
 1. Sign in with GitHub (OAuth, `read:user`).
-2. MetaMask connected to BOT Chain **968** (auto-switch via `wallet_addEthereumChain`).
+2. MetaMask connected to the selected network (auto-switch via `wallet_addEthereumChain`;
+   Testnet **968** by default, Mainnet **677** via the toggle).
 3. Analyze your own profile → live preview renders.
 4. Remove some AI skills, pick an avatar and title.
 5. Mint → transaction hash appears.
-6. Open the hash on `https://scan.bohr.life/tx/0x…`.
+6. Open the hash on the matching explorer (`scan.bohr.life` for testnet,
+   `scan.botchain.ai` for mainnet).
 7. The success modal reports **GitHub verified**, because the server matched the
    `BadgeMinted` event against your login.
 8. `GET /api/badge/<wallet>.svg` renders the minted badge, publicly, with no login.

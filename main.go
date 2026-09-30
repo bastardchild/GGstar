@@ -343,27 +343,38 @@ func main() {
 		chainID, err := svc.Chain().HexChainID(c.Context())
 		rpcOK := err == nil
 
+		mainnetConfigured := cfg.MainnetConfigured()
+		var mainnetChainID int64
+		mainnetRpcOK := true
+		if mainnetConfigured {
+			var mainnetErr error
+			mainnetChainID, mainnetErr = svc.ChainMain().HexChainID(c.Context())
+			mainnetRpcOK = mainnetErr == nil
+		}
+
 		cacheOK := cacheStore.Ping(c.Context()) == nil
 
 		status := fiber.StatusOK
-		if !rpcOK {
+		if !rpcOK || !mainnetRpcOK {
 			status = fiber.StatusServiceUnavailable
 		}
 
 		return c.Status(status).JSON(fiber.Map{
-			"status":            map[bool]string{true: "ok", false: "degraded"}[rpcOK],
+			"status":            map[bool]string{true: "ok", false: "degraded"}[rpcOK && mainnetRpcOK],
 			"service":           "ggstar",
 			"network":           cfg.NetworkName,
 			"chainId":           cfg.ChainID,
 			"rpcChainId":        chainID,
 			"rpcOk":             rpcOK,
+			"mainnetConfigured": mainnetConfigured,
+			"mainnetChainId":    mainnetChainID,
+			"mainnetRpcOk":      mainnetRpcOK,
 			"cacheDriver":       cfg.CacheDriver,
 			"cacheOk":           cacheOK,
 			"aiEnabled":         svc.AIEnabled(),
 			"githubAuthenticated": cfg.GitHubAuthenticated(),
 			"oauthEnabled":      cfg.OAuthEnabled(),
 			"contractConfigured": svc.Chain().Configured(),
-			"mainnetConfigured":  cfg.MainnetConfigured(),
 		})
 	})
 

@@ -135,9 +135,29 @@
           </dl>
         </div>
 
+        <div class="mt-4">
+          <p class="text-xs text-slate-400">Mint network</p>
+          <div class="mt-1.5 flex rounded-xl border border-slate-700 p-1 text-xs" role="group" aria-label="Mint network">
+            <button @click="switchNetwork('testnet')"
+                    :class="targetNetwork === 'testnet' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'"
+                    class="flex-1 rounded-lg px-3 py-1.5 font-medium">
+              Testnet · 968
+            </button>
+            <button @click="switchNetwork('mainnet')" :disabled="!mainnetReady || isMinting"
+                    :class="targetNetwork === 'mainnet' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'"
+                    :title="mainnetReady ? 'Mint with real BOT' : 'Mainnet contract not configured'"
+                    class="flex-1 rounded-lg px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-40">
+              Mainnet · 677
+            </button>
+          </div>
+          <p class="mt-1 text-[11px] text-amber-300" x-show="targetNetwork === 'mainnet'">
+            Mainnet mints spend real BOT. Testnet is free.
+          </p>
+        </div>
+
         <button @click="mintSBT()" :disabled="isMinting || checkingBadge || alreadyMinted || !contractReady || !selectedSkills.length || !canMint"
                 class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-300 to-teal-300 px-5 py-3 font-semibold text-slate-900 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
-          <span x-show="!isMinting && !alreadyMinted">Mint badge on BOT Chain</span>
+          <span x-show="!isMinting && !alreadyMinted">Mint badge on <span x-text="netShort"></span></span>
           <span x-show="!isMinting && alreadyMinted">Already minted ✓</span>
           <span x-show="isMinting">Waiting for wallet</span>
         </button>
@@ -146,7 +166,7 @@
           Copy badge widget
         </button>
         <p class="mt-2 text-center text-[11px] text-rose-300" x-show="!contractReady">
-          CONTRACT_ADDRESS is not set. Deploy the contract (Fase 1) and restart the app.
+          <span x-text="netShort"></span> contract is not configured on the server.
         </p>
         <p class="mt-2 text-center text-[11px] text-amber-300" x-show="!walletAddress">
           Connect MetaMask to mint.

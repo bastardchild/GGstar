@@ -1,4 +1,18 @@
 /* GGstar frontend: config load + Alpine app. GGSTAR bootstrap is inline in index.html. */
+// Shared with public/nav.js: the selected mint network persists across pages.
+const NET_KEY = 'ggstar-net';
+function readSavedNetwork() {
+  try {
+    return localStorage.getItem(NET_KEY);
+  } catch (_) {
+    return null;
+  }
+}
+function saveNetwork(name) {
+  try {
+    localStorage.setItem(NET_KEY, name);
+  } catch (_) { /* private mode: selection lasts this page only */ }
+}
 async function loadGGStarConfig() {
   try {
     const res = await fetch('/api/config');
@@ -12,6 +26,7 @@ async function loadGGStarConfig() {
       explorerUrl: cfg.explorerUrl || GGSTAR.explorerUrl,
       nativeSymbol: cfg.nativeSymbol || GGSTAR.nativeSymbol,
       contractAddress: cfg.contractAddress || '',
+      mainnet: cfg.mainnet || null,
       abi: Array.isArray(cfg.abi) ? cfg.abi : [],
       aiEnabled: !!cfg.aiEnabled,
       githubAuth: !!cfg.githubAuth,
@@ -25,7 +40,9 @@ function ggstar() {
     // config
     aiEnabled: GGSTAR.aiEnabled,
     githubAuth: GGSTAR.githubAuth,
-    contractReady: /^0x[0-9a-fA-F]{40}$/.test(GGSTAR.contractAddress || ''),
+
+    // Mint target network: 'testnet' (default, free) or 'mainnet' (real BOT).
+    targetNetwork: 'testnet',
 
     // GitHub identity
     signedIn: false,
@@ -68,9 +85,13 @@ function ggstar() {
     async init() {
       if (!GGSTAR.loaded) {
         await loadGGStarConfig();
-        this.contractReady = /^0x[0-9a-fA-F]{40}$/.test(GGSTAR.contractAddress || '');
         this.aiEnabled = GGSTAR.aiEnabled;
         this.githubAuth = GGSTAR.githubAuth;
+      }
+      // Restore the network picked earlier (any page). Invalid or
+      // unconfigured values fall back to testnet via the mainnetReady gate.
+      if (readSavedNetwork() === 'mainnet' && this.mainnetReady) {
+        this.targetNetwork = 'mainnet';
       }
       await this.loadMe();
       await this.loadSaved();
@@ -168,7 +189,7 @@ function ggstar() {
       return (this.result?.achievements || []).filter(a => a.unlocked);
     },
     get txUrl() {
-      return GGSTAR.explorerUrl + '/tx/' + this.txHash;
+      return this.net.explorerUrl + '/tx/' + this.txHash;
     },
     get tweetUrl() {
       if (this.snippet.twitter) return this.snippet.twitter;
@@ -186,9 +207,64 @@ function ggstar() {
       return !!(this.existingBadge && this.existingBadge.found);
     },
     get mintedTokenUrl() {
+      // The badge carries its own chain-correct token URL (set per-chain by
+      // the server), so the link is right even if the toggle moved since.
+      if (this.alreadyMinted && this.existingBadge.explorerUrl) {
+        return this.existingBadge.explorerUrl;
+      }
       if (!this.alreadyMinted) return '#';
-      return GGSTAR.explorerUrl + '/token/' + GGSTAR.contractAddress +
+      return this.net.explorerUrl + '/token/' + this.net.contractAddress +
         '?tokenId=' + (this.existingBadge.tokenId ?? 0);
+    },
+    // Active mint target. Testnet fields come from the GGSTAR bootstrap;
+    // mainnet fields arrive via /api/config (GGSTAR.mainnet).
+    get net() {
+      if (this.targetNetwork === 'mainnet' && GGSTAR.mainnet) {
+        const m = GGSTAR.mainnet;
+        return {
+          chainIdHex: m.chainIdHex || '',
+          chainName: m.name || 'BOT Chain Mainnet',
+          rpcUrl: m.rpcUrl || '',
+          explorerUrl: m.explorerUrl || '',
+          nativeSymbol: GGSTAR.nativeSymbol || 'BOT',
+          contractAddress: m.contractAddress || '',
+        };
+      }
+      return {
+        chainIdHex: GGSTAR.chainIdHex,
+        chainName: GGSTAR.chainName,
+        rpcUrl: GGSTAR.rpcUrl,
+        explorerUrl: GGSTAR.explorerUrl,
+        nativeSymbol: GGSTAR.nativeSymbol || 'BOT',
+        contractAddress: GGSTAR.contractAddress,
+      };
+    },
+    get netShort() {
+      return this.targetNetwork === 'mainnet' ? 'Mainnet' : 'Testnet';
+    },
+    get contractReady() {
+      return /^0x[0-9a-fA-F]{40}$/.test(this.net.contractAddress || '');
+    },
+    get mainnetReady() {
+      const m = GGSTAR.mainnet;
+      return !!m && /^0x[0-9a-fA-F]{40}$/.test(m.contractAddress || '');
+    },
+    switchNetwork(name) {
+      if (this.isMinting || (name !== 'testnet' && name !== 'mainnet')) return;
+      if (name === 'mainnet' && !this.mainnetReady) return;
+      if (this.targetNetwork === name) return;
+      this.targetNetwork = name;
+      saveNetwork(name);
+      // A pending mint belongs to the previous network; drop it so links and
+      // verification can never mix chains.
+      this.txHash = '';
+      this.claim = null;
+      this.showModal = false;
+      this.error = '';
+      if (this.walletAddress) {
+        this.ensureNetwork();
+        this.checkMinted();
+      }
     },
     // showRecheck is true when ownership is unproven for a reason a retry
     // could fix (pending tx, RPC hiccup). A username mismatch is final, so
@@ -242,32 +318,33 @@ function ggstar() {
     },
 
     async ensureNetwork() {
+      const net = this.net;
       try {
         const current = await window.ethereum.request({ method: 'eth_chainId' });
         this.chainId = current;
-        if (current.toLowerCase() === GGSTAR.chainIdHex.toLowerCase()) return;
+        if (net.chainIdHex && current.toLowerCase() === net.chainIdHex.toLowerCase()) return;
 
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: GGSTAR.chainIdHex }]
+            params: [{ chainId: net.chainIdHex }]
           });
         } catch (switchErr) {
           if (switchErr?.code !== 4902 && switchErr?.code !== -32603) throw switchErr;
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [{
-              chainId: GGSTAR.chainIdHex,
-              chainName: GGSTAR.chainName,
-              nativeCurrency: { name: 'BOT', symbol: GGSTAR.nativeSymbol || 'BOT', decimals: 18 },
-              rpcUrls: [GGSTAR.rpcUrl],
-              blockExplorerUrls: [GGSTAR.explorerUrl]
+              chainId: net.chainIdHex,
+              chainName: net.chainName,
+              nativeCurrency: { name: 'BOT', symbol: net.nativeSymbol || 'BOT', decimals: 18 },
+              rpcUrls: [net.rpcUrl],
+              blockExplorerUrls: [net.explorerUrl]
             }]
           });
         }
         this.chainId = await window.ethereum.request({ method: 'eth_chainId' });
       } catch (e) {
-        this.error = 'Could not switch to ' + GGSTAR.chainName + ': ' + (e?.message || e);
+        this.error = 'Could not switch to ' + net.chainName + ': ' + (e?.message || e);
       }
     },
 
@@ -371,7 +448,7 @@ function ggstar() {
 
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const contract = new ethers.Contract(GGSTAR.contractAddress, GGSTAR.abi, signer);
+        const contract = new ethers.Contract(this.net.contractAddress, GGSTAR.abi, signer);
 
         const tx = await contract.mintBadge(
           this.analyzedUsername,
@@ -446,7 +523,7 @@ function ggstar() {
 
     fallbackSnippet() {
       const badgeUrl = window.location.origin + '/api/badge/' + this.walletAddress + '.svg';
-      const verify = this.txHash ? GGSTAR.explorerUrl + '/tx/' + this.txHash : GGSTAR.explorerUrl;
+      const verify = this.txHash ? this.net.explorerUrl + '/tx/' + this.txHash : this.net.explorerUrl;
       const markdown = `[![GGstar Skill Badge](${badgeUrl})](${verify})`;
       const html = `<a href="${verify}" target="_blank" rel="noopener">\n  <img src="${badgeUrl}" alt="GGstar Skill Badge" width="480" />\n</a>`;
       return { markdown, html, badgeUrl, verifyUrl: verify, twitter: '' };

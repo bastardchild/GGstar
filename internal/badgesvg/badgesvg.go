@@ -108,9 +108,12 @@ func Render(b model.Badge, explorerURL, contractAddress string) string {
 		skills = "reputation verified on-chain"
 	}
 
-	link := fmt.Sprintf("%s/token/%s?tokenId=%d", strings.TrimRight(explorerURL, "/"), contractAddress, b.TokenID)
-	if contractAddress == "" {
-		link = explorerURL
+	link := b.ExplorerURL
+	if link == "" {
+		link = fmt.Sprintf("%s/token/%s?tokenId=%d", strings.TrimRight(explorerURL, "/"), contractAddress, b.TokenID)
+		if contractAddress == "" {
+			link = explorerURL
+		}
 	}
 
 	pillLabel, pillFill, pillStroke := verificationPill(b.Verified)
@@ -184,12 +187,18 @@ func Empty() string {
 		KawaiiTheme.Text, KawaiiTheme.Muted, KawaiiTheme.Muted)
 }
 
-// Snippet returns copy-paste HTML/Markdown for GitHub READMEs.
+// Snippet returns copy-paste HTML/Markdown for GitHub READMEs. When the badge
+// was read from a chain, its own ExplorerURL (set per-chain by chain.GetBadge)
+// wins, so mainnet badges link to the mainnet explorer even though the default
+// parameters describe testnet.
 func Snippet(b model.Badge, baseURL, explorerURL, contractAddress string) map[string]string {
 	badgeURL := strings.TrimRight(baseURL, "/") + "/api/badge/" + b.Address + ".svg"
-	verify := fmt.Sprintf("%s/token/%s?tokenId=%d", strings.TrimRight(explorerURL, "/"), contractAddress, b.TokenID)
-	if contractAddress == "" {
-		verify = explorerURL
+	verify := b.ExplorerURL
+	if verify == "" {
+		verify = fmt.Sprintf("%s/token/%s?tokenId=%d", strings.TrimRight(explorerURL, "/"), contractAddress, b.TokenID)
+		if contractAddress == "" {
+			verify = explorerURL
+		}
 	}
 
 	htmlSnippet := fmt.Sprintf(`<a href="%s" target="_blank" rel="noopener">
