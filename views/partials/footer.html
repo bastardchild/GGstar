@@ -16,7 +16,7 @@
       </div>
     </div>
     <p class="mt-4 border-t border-slate-800 pt-4 text-center text-[11px] text-slate-600">
-      GGstar · {{.NetworkName}} ({{.ChainID}}) · analyses cached 10 min · {{.ProfileCount}} profiles indexed
+      GGstar · {{if .MainnetContractAddr}}{{.MainnetName}} ({{.MainnetChainID}}){{else}}{{.NetworkName}} ({{.ChainID}}){{end}} · analyses cached 10 min · {{.ProfileCount}} profiles indexed
     </p>
   </div>
 </footer>
@@ -31,7 +31,7 @@
          class="rounded-lg bg-slate-800 px-3 py-2 text-pink-200 hover:bg-slate-700">BOT Chain Explorer ↗</a>{{end}}      
     </div>
     <p class="mt-4 border-t border-slate-800 pt-4 text-[11px] text-slate-600">
-      {{if eq .Active "leaderboard"}}{{.NetworkName}} · chain {{.ChainID}} · {{.UserCount}} registered users · {{.ProfileCount}} profiles indexed{{else}}{{.NetworkName}} · chain {{.ChainID}} · push-based achievements use the last 90 days of events{{end}}
+      {{if eq .Active "leaderboard"}}{{if .MainnetContractAddr}}{{.MainnetName}} · chain {{.MainnetChainID}}{{else}}{{.NetworkName}} · chain {{.ChainID}}{{end}} · {{.UserCount}} registered users · {{.ProfileCount}} profiles indexed{{else}}{{if .MainnetContractAddr}}{{.MainnetName}} · chain {{.MainnetChainID}}{{else}}{{.NetworkName}} · chain {{.ChainID}}{{end}} · push-based achievements use the last 90 days of events{{end}}
     </p>
   </div>
 </footer>
