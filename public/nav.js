@@ -91,13 +91,14 @@ function ggstarNav() {
     },
 
     // Active network, shared with the index page via localStorage
-    // ('ggstar-net', written by app.js switchNetwork). Falls back to testnet
-    // when nothing was picked or mainnet is unconfigured.
+    // ('ggstar-net', written by app.js switchNetwork). Default is mainnet
+    // (jury requirement); an explicit saved 'testnet' is respected.
+    // Falls back to testnet when mainnet is unconfigured.
     get net() {
-      let wantMainnet = false;
+      let wantMainnet = true;
       try {
-        wantMainnet = localStorage.getItem('ggstar-net') === 'mainnet';
-      } catch (_) { /* private mode: testnet */ }
+        wantMainnet = localStorage.getItem('ggstar-net') !== 'testnet';
+      } catch (_) { /* private mode: default below applies */ }
       const m = this.navMainnet;
       if (wantMainnet && m && /^0x[0-9a-fA-F]{40}$/.test(m.contractAddress || '')) {
         return {

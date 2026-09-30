@@ -17,7 +17,8 @@ Built for **Build Week Hackathon Vol.2 - Track AI & RWA**.
 1. Open https://ggstar.sbs and click **Sign in with GitHub**.
 2. Click **Analyze my skill** - your own GitHub profile is analyzed, no username to type.
 3. Curate the result: pick an avatar, choose a title, remove skills that do not fit.
-4. Pick the mint network (Testnet 968 is free; Mainnet 677 spends real BOT), then click
+4. Pick the mint network (Mainnet 677 is the default and spends real BOT;
+   Testnet 968 is free), then click
    **Mint badge** and confirm in MetaMask.
 5. Share: copy the Markdown snippet into a GitHub README, or post to X tagging `@BOTChain_ai`.
 6. Anyone can verify the badge on the explorer or at `/api/badge/<wallet>.svg` - no login needed.
@@ -346,7 +347,7 @@ would let eviction silently log users out.
 
 1. Sign in with GitHub (OAuth, `read:user`).
 2. MetaMask connected to the selected network (auto-switch via `wallet_addEthereumChain`;
-   Testnet **968** by default, Mainnet **677** via the toggle).
+   Mainnet **677** by default, Testnet **968** via the toggle).
 3. Analyze your own profile → live preview renders.
 4. Remove some AI skills, pick an avatar and title.
 5. Mint → transaction hash appears.

@@ -138,16 +138,16 @@
         <div class="mt-4">
           <p class="text-xs text-slate-400">Mint network</p>
           <div class="mt-1.5 flex rounded-xl border border-slate-700 p-1 text-xs" role="group" aria-label="Mint network">
-            <button @click="switchNetwork('testnet')"
-                    :class="targetNetwork === 'testnet' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'"
-                    class="flex-1 rounded-lg px-3 py-1.5 font-medium">
-              Testnet · 968
-            </button>
             <button @click="switchNetwork('mainnet')" :disabled="!mainnetReady || isMinting"
                     :class="targetNetwork === 'mainnet' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'"
                     :title="mainnetReady ? 'Mint with real BOT' : 'Mainnet contract not configured'"
                     class="flex-1 rounded-lg px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-40">
               Mainnet · 677
+            </button>
+            <button @click="switchNetwork('testnet')"
+                    :class="targetNetwork === 'testnet' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'"
+                    class="flex-1 rounded-lg px-3 py-1.5 font-medium">
+              Testnet · 968
             </button>
           </div>
           <p class="mt-1 text-[11px] text-amber-300" x-show="targetNetwork === 'mainnet'">

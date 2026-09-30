@@ -88,9 +88,10 @@ function ggstar() {
         this.aiEnabled = GGSTAR.aiEnabled;
         this.githubAuth = GGSTAR.githubAuth;
       }
-      // Restore the network picked earlier (any page). Invalid or
-      // unconfigured values fall back to testnet via the mainnetReady gate.
-      if (readSavedNetwork() === 'mainnet' && this.mainnetReady) {
+      // Default network is mainnet (jury requirement); an explicit saved
+      // 'testnet' choice is respected. Falls back to testnet when mainnet
+      // is unconfigured.
+      if (readSavedNetwork() !== 'testnet' && this.mainnetReady) {
         this.targetNetwork = 'mainnet';
       }
       await this.loadMe();
