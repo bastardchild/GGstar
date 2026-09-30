@@ -20,6 +20,7 @@ function ggstarNav() {
     navRpcUrl: '',
     navExplorerUrl: '',
     navNativeSymbol: 'BOT',
+    navChainId: '',
     navMainnet: null,
 
     async init() {
@@ -51,6 +52,7 @@ function ggstarNav() {
         const cfg = await res.json();
         this.navChainIdHex = cfg.chainIdHex || '';
         this.navChainName = cfg.network || '';
+        this.navChainId = cfg.chainId || '';
         this.navRpcUrl = cfg.rpcUrl || '';
         this.navExplorerUrl = cfg.explorerUrl || '';
         this.navNativeSymbol = cfg.nativeSymbol || 'BOT';
@@ -99,6 +101,7 @@ function ggstarNav() {
       const m = this.navMainnet;
       if (wantMainnet && m && /^0x[0-9a-fA-F]{40}$/.test(m.contractAddress || '')) {
         return {
+          chainId: m.chainId || '',
           chainIdHex: m.chainIdHex || '',
           chainName: m.name || 'BOT Chain Mainnet',
           rpcUrl: m.rpcUrl || '',
@@ -106,6 +109,7 @@ function ggstarNav() {
         };
       }
       return {
+        chainId: this.navChainId,
         chainIdHex: this.navChainIdHex,
         chainName: this.navChainName,
         rpcUrl: this.navRpcUrl,

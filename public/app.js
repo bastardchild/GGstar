@@ -222,6 +222,7 @@ function ggstar() {
       if (this.targetNetwork === 'mainnet' && GGSTAR.mainnet) {
         const m = GGSTAR.mainnet;
         return {
+          chainId: m.chainId || '',
           chainIdHex: m.chainIdHex || '',
           chainName: m.name || 'BOT Chain Mainnet',
           rpcUrl: m.rpcUrl || '',
@@ -231,6 +232,7 @@ function ggstar() {
         };
       }
       return {
+        chainId: GGSTAR.chainId,
         chainIdHex: GGSTAR.chainIdHex,
         chainName: GGSTAR.chainName,
         rpcUrl: GGSTAR.rpcUrl,
