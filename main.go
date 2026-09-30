@@ -80,6 +80,8 @@ type tokenURIRequest struct {
 }
 
 func main() {
+	startTime := time.Now()
+
 	cfg := config.Load()
 
 	store, err := db.Open(cfg.DBPath)
@@ -198,7 +200,10 @@ func main() {
 
 	pageData := func(c *fiber.Ctx) fiber.Map {
 		return fiber.Map{
-			"NetworkName":   cfg.NetworkName,
+			// AssetV busts the 24h browser cache on /public/* files: it changes
+			// on every restart (= every deploy), so viewers always fetch the
+			// JS/CSS that matches the rendered HTML. See ?v= in head.html.
+			"AssetV":        fmt.Sprintf("%d", startTime.Unix()),			"NetworkName":   cfg.NetworkName,
 			"ChainID":       cfg.ChainID,
 			"ChainIDHex":    cfg.ChainIDHex,
 			"RPCURL":        cfg.RPCURL,

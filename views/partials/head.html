@@ -6,7 +6,7 @@
 <title>{{.Title}}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 {{if .WithEthers}}<script src="/public/vendor/ethers.min.js"></script>
-{{end}}<script src="/public/nav.js"></script>
+{{end}}<script src="/public/nav.js?v={{.AssetV}}"></script>
 {{if .WithAlpine}}<script defer src="/public/vendor/alpine.min.js"></script>
-{{end}}<link rel="stylesheet" href="/public/app.css" />
+{{end}}<link rel="stylesheet" href="/public/app.css?v={{.AssetV}}" />
 </head>
